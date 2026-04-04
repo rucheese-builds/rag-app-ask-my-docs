@@ -28,11 +28,84 @@ TEST_QUESTIONS = [
         "ground_truth": "Agentforce is Salesforce's multi-agent platform that closed 29,000 deals in its first 15 months, growing 50% quarter over quarter.",
         "relevant_sources": ["Transcript-Salesforce-Inc-Q4-FY26-Earnings-Conference-Call-2-25-26.pdf"]
     },
+
+    # Semantic trap 1 — "web" means internet, not agent network
+{
+    "question": "How do I build a web scraper to collect agent data?",
+    "ground_truth": "Not in corpus.",
+    "relevant_sources": []
+},
+
+# Semantic trap 2 — "protocol" means communication etiquette, not agent protocol
+{
+    "question": "What communication protocol should I use for my API?",
+    "ground_truth": "Not in corpus.",
+    "relevant_sources": []
+},
+
+# Semantic trap 3 — "orchestration" means music, not agent orchestration  
+{
+    "question": "What makes a good musical orchestration?",
+    "ground_truth": "Not in corpus.",
+    "relevant_sources": []
+},
+
+# Semantic trap 4 — "agent" means real estate agent, not AI agent
+{
+    "question": "How do real estate agents find new clients?",
+    "ground_truth": "Not in corpus.",
+    "relevant_sources": []
+},
+
+# Semantic trap 5 — "token" means financial token, not LLM token
+{
+    "question": "Should I invest in crypto tokens in 2025?",
+    "ground_truth": "Not in corpus.",
+    "relevant_sources": []
+},
+
+# Adversarial question 1 — asks about something NOT in your corpus
+{
+    "question": "What is OpenAI's strategy for multi-agent systems?",
+    "ground_truth": "Not covered in the document corpus.",
+    "relevant_sources": []
+},
+
+# Adversarial question 2 — ambiguous, could match many documents
+{
+    "question": "What are agents?",
+    "ground_truth": "Agents are autonomous systems that can perceive their environment and take actions.",
+    "relevant_sources": ["Internet of Agents.pdf", "AgentVerse.pdf", "CAMEL.pdf"]
+},
+
+# Adversarial question 3 — requires synthesizing across documents
+{
+    "question": "How do academic research findings on agent coordination compare to how Salesforce implements it in Agentforce?",
+    "ground_truth": "Academic research describes multi-layered coordination protocols and dynamic agent selection, while Salesforce implements this through Agentforce's orchestration layer with MCP servers and Slack integration.",
+    "relevant_sources": ["L2M2 Multi-agent Coordination.pdf", "Transcript-Salesforce-Inc-Q4-FY26-Earnings-Conference-Call-2-25-26.pdf"]
+},
+
+# Adversarial question 4 — very specific number lookup
+{
+    "question": "How many Agentic Work Units did Salesforce deliver in Q4?",
+    "ground_truth": "Salesforce delivered approximately 771 million Agentic Work Units in Q4 FY26.",
+    "relevant_sources": ["Transcript-Salesforce-Inc-Q4-FY26-Earnings-Conference-Call-2-25-26.pdf"]
+},
+
+# Adversarial question 5 — cross-paper synthesis
+{
+    "question": "What are the key differences between CAMEL and AgentVerse approaches to multi-agent collaboration?",
+    "ground_truth": "CAMEL focuses on communicative agents using role-playing for problem solving, while AgentVerse creates decentralized ecosystems where agents take specialized roles including recruiter, critic, and worker.",
+    "relevant_sources": ["CAMEL.pdf", "AgentVerse.pdf"]
+},
+
 ]
 
 # ── Tier 1: Retrieval metrics (free, no LLM needed) ────────────────────
 
 def compute_hit_rate(retrieved_docs, relevant_sources):
+    if not relevant_sources:
+        return 1.0 if not retrieved_docs else 0.0
     retrieved_sources = [doc.metadata.get("source", "") for doc in retrieved_docs]
     for rel in relevant_sources:
         if any(rel in src for src in retrieved_sources):
@@ -47,6 +120,9 @@ def compute_mrr(retrieved_docs, relevant_sources):
     return 0.0
 
 def compute_precision_at_k(retrieved_docs, relevant_sources, k=3):
+    if not relevant_sources:
+        top_k = retrieved_docs[:k]
+        return 0.0 if top_k else 1.0
     top_k = retrieved_docs[:k]
     hits = sum(
         1 for doc in top_k
@@ -55,6 +131,8 @@ def compute_precision_at_k(retrieved_docs, relevant_sources, k=3):
     return hits / k
 
 def compute_recall_at_k(retrieved_docs, relevant_sources, k=3):
+    if not relevant_sources:
+        return 1.0 if not retrieved_docs else 0.0
     top_k = retrieved_docs[:k]
     retrieved_relevant = set(
         doc.metadata.get("source", "") for doc in top_k
