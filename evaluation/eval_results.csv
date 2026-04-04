@@ -1,0 +1,7 @@
+question,hit_rate,mrr,precision@3,recall@3,semantic_similarity,answer
+How do agents communicate with each other in a web of agents?,1.0,1.0,1.0,0.6666666666666666,0.7649188211952974,"Based on the provided context, it appears that the mechanism of agent communication is not explicitly described. However, [Source 3] mentions that ""an edge /u1D452/u1D456 /u1D457∈ /u1D438"" implies a c"
+What is the role of an orchestrator agent in multi-agent systems?,1.0,0.5,0.3333333333333333,0.5,0.8451824670749186,"According to [Source 1] — Scaling Agent Systems Google DeepMind.pdf, the role of an orchestrator agent in multi-agent systems is to control and coordinate the activities of other agents. The orchestra"
+How is Salesforce monetizing AI agents?,1.0,1.0,1.0,1.0,0.850846293083109,"According to [Source 2], Salesforce has found a formula to monetize AI, which consists of three distinct ways:
+
+1. Their large install base of 100 million seats, where they are upgrading to premium SK"
+What is Agentforce and how many deals has it closed?,1.0,1.0,1.0,1.0,0.733836772669723,"According to the provided context, Agentforce is a product that has apps and agents, as mentioned by Marc Benioff in [Source 3]. However, the specific details about Agentforce are not extensively desc"
