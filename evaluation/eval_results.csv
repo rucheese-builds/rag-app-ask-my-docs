@@ -1,27 +1,26 @@
 question,hit_rate,mrr,precision@3,recall@3,semantic_similarity,answer
-How do agents communicate with each other in a web of agents?,1.0,1.0,1.0,0.6666666666666666,0.7589414712801059,"Based on the provided context, I don't have enough information in my documents to answer this question comprehensively. However, I can provide some insights based on the given sources.
+How do agents communicate with each other in a web of agents?,1.0,1.0,1.0,0.6666666666666666,0.7444160404272424,"Unfortunately, I don't have enough information in my documents to answer this question accurately. The provided context mentions the possibility of multiple chat agents communicating with each other ["
+What is the role of an orchestrator agent in multi-agent systems?,1.0,0.5,0.3333333333333333,0.5,0.8212391680494393,"According to [Source 1] — Scaling Agent Systems Google DeepMind.pdf, the role of an orchestrator agent in multi-agent systems involves:
 
-From [Source 3"
-What is the role of an orchestrator agent in multi-agent systems?,1.0,0.5,0.3333333333333333,0.5,0.848009962196655,"According to [Source 1] — Scaling Agent Systems Google DeepMind.pdf, an orchestrator agent plays a crucial role in multi-agent systems as it determines how sub-agent outputs are aggregated, whether th"
-How is Salesforce monetizing AI agents?,1.0,1.0,1.0,1.0,0.8686536461054851,"According to [Source 2], Salesforce has found the formula to monetize AI through three distinct ways. The first way mentioned is their large install base of hundred millions of seats, where they are u"
-What is Agentforce and how many deals has it closed?,1.0,1.0,1.0,1.0,0.74782655477176,"According to the context provided, Agentforce is a product or solution that uses AI agents. [Source 2]
+* Determining how sub-agent outputs are aggregated
+* Whether th"
+How is Salesforce monetizing AI agents?,1.0,1.0,1.0,1.0,0.8603255489113742,"According to [Source 2], Salesforce has found three distinct ways to monetize AI:
 
-The exact number of deals closed by Agentforce is not explicitly stated in the provided context."
-How do I build a web scraper to collect agent data?,0.0,0.0,0.0,0.0,0.4745248842508215,"To build a web scraper to collect agent data, you can utilize the Web Agent functionality provided by OpenAgents [Source 2]. The Web Agent is designed for autonomous web browsing, which implies it can"
-What communication protocol should I use for my API?,0.0,0.0,0.0,0.0,0.3935588842230734,"To determine which communication protocol to use for your API, we need to consider the specific requirements and functionalities of your system.
+1. Their large install base of hundred million seats, where they are upgrading to premium SKUs that contain already e"
+What is Agentforce and how many deals has it closed?,1.0,1.0,1.0,1.0,0.7477911786384208,"According to the context, Agentforce is a product that uses AI and agents, specifically sales and service applications, as mentioned in [Source 2] and [Source 3]. The exact nature of Agentforce is not"
+How do I build a web scraper to collect agent data?,0.0,0.0,0.0,0.0,0.472955187584398,"Based on the provided context, it appears that building a web scraper to collect agent data is not explicitly mentioned as an option. However, the Web Agent in OpenAgents can be used for autonomous we"
+What communication protocol should I use for my API?,0.0,0.0,0.0,0.0,0.44653535221184854,"To determine which communication protocol to use for your API, let's break down the options.
 
-From [Source 3] — Internet of Agents.pdf, it is mentio"
-What makes a good musical orchestration?,0.0,0.0,0.0,0.0,0.4925571632144561,"I don't have enough information in my documents to answer this. The provided context does not mention anything about music, let alone musical orchestration. The text appears to be related to AI agents"
-How do real estate agents find new clients?,0.0,0.0,0.0,0.0,0.4715669495878785,I don't have enough information in my documents to answer this question. The provided context does not mention real estate agents or their methods for finding new clients. It appears to be related to 
-Should I invest in crypto tokens in 2025?,0.0,0.0,0.0,0.0,0.504200623400292,"I don't have enough information in my documents to answer this. The provided context discusses IBM's earnings transcript, Microsoft's Q4 2025 earnings call, and Google's 2025 Q3 earnings transcript, b"
-What is OpenAI's strategy for multi-agent systems?,0.0,0.0,0.0,0.0,0.530308283711951,I don't have enough information in my documents to answer this question. The provided context does not mention OpenAI or its strategy for multi-agent systems. The context only discusses various resear
-What are agents?,1.0,1.0,0.6666666666666666,0.3333333333333333,0.6811512716396542,"According to [Source 1] — Internet of Agents.pdf, an agent is defined as a ""Thing Assistant"" with specific characteristics and capabilities.
+Firstly, we have the **Agent Communication Protocol (ACP)**, which is mentioned in [Source 2] as one of th"
+What makes a good musical orchestration?,0.0,0.0,0.0,0.0,0.4401444095335372,I don't have enough information in my documents to answer this. The provided context does not mention anything about musical orchestration or what makes a good one.
+How do real estate agents find new clients?,0.0,0.0,0.0,0.0,0.4831470636344331,I don't have enough information in my documents to answer this. The provided context does not mention anything about real estate agents finding new clients or their methods of doing so. The context on
+Should I invest in crypto tokens in 2025?,0.0,0.0,0.0,0.0,0.4819805606528264,"I don't have enough information in my documents to answer this question. The provided context only discusses IBM's and Microsoft's (MSFT) earnings calls, investment strategies, and capital expenditure"
+What is OpenAI's strategy for multi-agent systems?,0.0,0.0,0.0,0.0,0.5242476356184675,"I don't have enough information in my documents to answer this question. The context only provides general information about multi-agent systems and coordination mechanisms, as well as some recent res"
+What are agents?,1.0,1.0,0.6666666666666666,0.3333333333333333,0.7577722062509836,"According to Source 1 and Source 3, ""agents"" refer to autonomous entities that can interact with each other and their environment.
 
-[Source 1], page 3-5.
+In the context of multi-agent systems, agents are defined as self-co"
+How do academic research findings on agent coordination compare to how Salesforce implements it in Agentforce?,1.0,1.0,0.6666666666666666,0.5,0.7091721980711777,"I don't have enough information in my documents to answer this question. The provided context only mentions the general concept of multi-agent coordination and its relation to agent coordination, but "
+How many Agentic Work Units did Salesforce deliver in Q4?,1.0,1.0,1.0,1.0,0.9371071180463039,"According to [Source 1], Salesforce delivered about 771 million Agentic Work Units in Q4 alone."
+What are the key differences between CAMEL and AgentVerse approaches to multi-agent collaboration?,0.0,0.0,0.0,0.0,0.7017576565526482,"I don't have enough information in my documents to answer this.
 
-Additionally, the context mentions "
-How do academic research findings on agent coordination compare to how Salesforce implements it in Agentforce?,1.0,1.0,0.6666666666666666,0.5,0.7857341982429916,"Based on the provided context, I can provide an answer to the question.
-
-Academic research findings on agent coordination and Salesforce's implementation of agent coordination in Agentforce may differ"
-How many Agentic Work Units did Salesforce deliver in Q4?,1.0,1.0,1.0,1.0,0.9418891457061831,"According to [Source 1], Salesforce delivered approximately 771 million Agentic Work Units in Q4 alone."
-What are the key differences between CAMEL and AgentVerse approaches to multi-agent collaboration?,0.0,0.0,0.0,0.0,0.6804810655592406,"I don't have enough information in my documents to answer this question accurately. The provided context only mentions AutoGen, but not CAMEL or a direct comparison with AgentVerse. Without additional"
+The provided context only mentions frameworks such as AgentVerse (Chen et al., 2023) and AutoGen (Wu et al., 2023), but does not mentio"

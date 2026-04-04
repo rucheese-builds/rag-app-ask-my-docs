@@ -176,3 +176,19 @@ Every failed attempt is documented here because future me —
 and anyone reading this — should understand why the final
 solution is what it is. Code without failure history is
 incomplete documentation.
+
+## Final Evaluation Numbers
+
+Run after complete pipeline including query classifier.
+
+Standard questions (4): Hit Rate 1.00 | MRR 0.875 | 
+Precision@3 0.833 | Recall@3 0.792 | Similarity 0.799
+
+Full set with adversarial (9): Hit Rate 0.50 | MRR 0.464 | 
+Precision@3 0.405 | Recall@3 0.357 | Similarity 0.652
+
+The gap between standard and adversarial scores is the 
+honest measure of where the system succeeds and where 
+it struggles. Semantic traps remain the primary failure 
+mode — caught at the classifier level for known patterns, 
+but novel semantic traps would still reach retrieval.
