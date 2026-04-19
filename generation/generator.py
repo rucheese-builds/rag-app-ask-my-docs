@@ -1,7 +1,7 @@
 from langchain_ollama import OllamaLLM
 from langchain_core.documents import Document
 
-LLM_MODEL = "llama3.2"
+LLM_MODEL = "mistral"
 
 def load_llm():
     print(f"Loading LLM: {LLM_MODEL}")
@@ -13,18 +13,22 @@ def format_context(documents):
     context_parts = []
     for i, doc in enumerate(documents):
         source = doc.metadata.get("source", "unknown")
+        description = doc.metadata.get("paper_description", "")
+        description_line = f"Paper focus: {description}\n" if description else ""
         context_parts.append(
-            f"[Source {i+1}] — {source}\n{doc.page_content}"
+            f"[Source {i+1}] — {source}\n{description_line}{doc.page_content}"
         )
     return "\n\n".join(context_parts)
 
 def build_prompt(query, context):
     return f"""You are an expert research assistant specializing in AI agents and multi-agent systems.
 
-Answer the question using ONLY the information provided in the context below.
-For every claim you make, you MUST cite the source using [Source N] notation.
-If the answer is not found in the context, say "I don't have enough information in my documents to answer this."
-Never fabricate information. Never use knowledge outside the provided context.
+Answer the question using ONLY information directly relevant to the question from the context below.
+If a source contains irrelevant information, ignore it completely — do not mention it.
+For every claim you make, cite the source using [Source N] notation.
+Keep your answer concise and focused — 3 to 5 sentences maximum.
+If the answer is not found in the context, say exactly: "I don't have enough information in my documents to answer this."
+Never fabricate information. Never explain what you cannot answer — just say you don't have enough information.
 
 Context:
 {context}

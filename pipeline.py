@@ -33,7 +33,7 @@ def run_pipeline(query, vectorstore, bm25, documents, reranker, llm):
         }
 
     retrieved = hybrid_search(vectorstore, bm25, documents, query)
-    reranked = rerank(reranker, query, retrieved, top_n=3)
+    reranked = rerank(reranker, query, retrieved, top_n=2)
     answer = generate_answer(llm, query, reranked)
 
     sources = []

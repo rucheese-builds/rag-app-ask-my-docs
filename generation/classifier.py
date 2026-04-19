@@ -1,19 +1,15 @@
-DOMAIN_KEYWORDS = [
-    "agentforce", "multi-agent", "multiagent", "web of agents",
-    "autogen", "agentverse", "camel", "react agent", "toolformer",
-    "langchain agent", "agent communication", "agent coordination",
-    "agent orchestration", "agent network", "agent ranking",
-    "agentic", "llm agent", "ai agent", "agent framework",
-    "internet of agents", "agent hospital", "agent bench",
-    "openagents", "salesforce agent", "microsoft copilot",
-    "servicenow ai", "nvidia ai", "earnings call", "agentforce"
-]
+from langchain_ollama import OllamaLLM
 
 def classify_query(query, llm=None):
-    query_lower = query.lower()
-    matched = [kw for kw in DOMAIN_KEYWORDS if kw in query_lower]
-    is_in_domain = len(matched) > 0
-    print(f"Query classification: {'IN_DOMAIN' if is_in_domain else 'OUT_OF_DOMAIN'}")
-    if matched:
-        print(f"Matched keywords: {matched}")
+    classifier_llm = OllamaLLM(model="mistral")
+
+    prompt = f"""Is this question about AI agents, multi-agent systems, agent frameworks, or enterprise AI strategy?
+
+Question: {query}
+
+Answer yes or no only."""
+
+    result = classifier_llm.invoke(prompt).strip().lower()
+    is_in_domain = result.startswith("yes")
+    print(f"Query classification: {'IN_DOMAIN' if is_in_domain else 'OUT_OF_DOMAIN'} ({result[:20]})")
     return is_in_domain
