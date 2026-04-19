@@ -24,7 +24,13 @@ PAPER_DESCRIPTIONS = {
     
 }
 
-
+def extract_section_header(text):
+    lines = text.strip().split('\n')
+    for line in lines[:5]:
+        line = line.strip()
+        if len(line) > 10 and len(line) < 100 and line[0].isupper():
+            return line
+    return ""
 
 def load_documents():
     documents = []
@@ -35,17 +41,25 @@ def load_documents():
         loader = PyPDFLoader(str(pdf_path))
         docs = loader.load()
         description = PAPER_DESCRIPTIONS.get(pdf_path.name, "")
+        paper_title = pdf_path.stem
         for doc in docs:
+            section_header = extract_section_header(doc.page_content)
+            header_prefix = f"{paper_title}"
+            if section_header:
+                header_prefix += f" > {section_header}"
+            header_prefix += "\n\n"
+            doc.page_content = header_prefix + doc.page_content
             doc.metadata["source"] = pdf_path.name
             doc.metadata["paper_description"] = description
+            doc.metadata["paper_title"] = paper_title
         documents.extend(docs)
     print(f"Total pages loaded: {len(documents)}")
     return documents
 
 def chunk_documents(documents):
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=512,
-        chunk_overlap=64,
+        chunk_size=1024,
+        chunk_overlap=128,
         separators=["\n\n", "\n", ".", " "]
     )
     chunks = splitter.split_documents(documents)
@@ -54,7 +68,7 @@ def chunk_documents(documents):
 
 def create_vector_store(chunks):
     print("Creating embeddings and storing in Chroma...")
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    embeddings = OllamaEmbeddings(model="nomic-embed-text:v1.5")
     vectorstore = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,

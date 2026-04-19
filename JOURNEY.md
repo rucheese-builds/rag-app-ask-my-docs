@@ -177,6 +177,32 @@ and anyone reading this — should understand why the final
 solution is what it is. Code without failure history is
 incomplete documentation.
 
+## Evaluation Paradox: Metrics vs Perceived Quality
+
+After implementing diversity reranking and larger chunks, automated 
+metrics dropped while human-perceived answer quality improved.
+
+| Metric | Before | After |
+|---|---|---|
+| Precision@3 | 0.405 | 0.286 |
+| MRR | 0.464 | 0.345 |
+| Semantic Similarity | 0.656 | 0.660 |
+
+Root cause: Diversity reranking deliberately introduces sources that 
+score lower on relevance to force cross-paper synthesis. Automated 
+metrics that measure whether a pre-defined correct source appears in 
+top-3 penalise this behaviour even when the resulting answer is richer.
+
+This reveals a fundamental limitation of single-source evaluation 
+frameworks for multi-document synthesis tasks. The correct evaluation 
+for a system designed to synthesise across sources would measure 
+answer completeness and source diversity, not source precision.
+
+Production solution: Multi-reference evaluation where each question 
+has multiple acceptable source documents, or LLM-as-judge evaluation 
+asking "is this answer well-synthesised from multiple sources?" rather 
+than "did it retrieve the correct document?"
+
 ## Final Evaluation Numbers
 
 Run after complete pipeline including query classifier.

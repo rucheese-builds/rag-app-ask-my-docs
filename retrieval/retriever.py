@@ -10,7 +10,7 @@ CHROMA_DIR = Path("chroma_db")
 BM25_INDEX_PATH = Path("bm25_index.pkl")
 
 def load_vector_store():
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    embeddings = OllamaEmbeddings(model="nomic-embed-text:v1.5")
     vectorstore = Chroma(
         persist_directory=str(CHROMA_DIR),
         embedding_function=embeddings
@@ -70,19 +70,15 @@ def reciprocal_rank_fusion(bm25_results, vector_results, k=60):
     sorted_keys = sorted(scores, key=scores.get, reverse=True)
     return [doc_map[key] for key in sorted_keys]
 
-def hybrid_search(vectorstore, bm25, documents, query, k=20):
+def hybrid_search(vectorstore, bm25, documents, query, k=100):
     print(f"\nSearching for: {query}")
-
     vector_results = vector_search(vectorstore, query, k=k)
     print(f"Vector search returned {len(vector_results)} chunks")
-
     bm25_results = bm25_search(bm25, documents, query, k=k)
     print(f"BM25 search returned {len(bm25_results)} chunks")
-
     fused_results = reciprocal_rank_fusion(bm25_results, vector_results)
-    top_results = fused_results[:5]
-    print(f"After fusion: top {len(top_results)} chunks selected")
-
+    top_results = fused_results[:25]
+    print(f"After fusion: top {len(top_results)} chunks selected for reranking")
     return top_results
 
 if __name__ == "__main__":

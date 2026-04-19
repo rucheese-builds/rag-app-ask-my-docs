@@ -15,11 +15,40 @@ def rerank(reranker, query, documents, top_n=3):
     scores = reranker.predict(pairs)
     scored_docs = list(zip(scores, documents))
     scored_docs.sort(key=lambda x: x[0], reverse=True)
-    top_docs = [doc for score, doc in scored_docs[:top_n]]
-    print(f"Top {top_n} chunks selected after reranking")
-    for i, (score, doc) in enumerate(scored_docs[:top_n]):
+
+    print(f"Top scores after cross-encoder:")
+    for i, (score, doc) in enumerate(scored_docs[:5]):
         print(f"  [{i+1}] Score: {score:.4f} | Source: {doc.metadata.get('source', 'unknown')}")
-    return top_docs
+
+    diverse_docs = diversity_rerank(scored_docs, top_n=top_n)
+    print(f"After diversity reranking: {len(diverse_docs)} chunks from {len(set(d.metadata.get('source') for d in diverse_docs))} sources")
+    return diverse_docs
+
+def diversity_rerank(scored_docs, top_n=3):
+    selected = []
+    selected_sources = []
+
+    for score, doc in scored_docs:
+        source = doc.metadata.get('source', 'unknown')
+
+        if len(selected) >= top_n:
+            break
+
+        if source not in selected_sources:
+            selected.append(doc)
+            selected_sources.append(source)
+        elif selected_sources.count(source) < 2:
+            selected.append(doc)
+            selected_sources.append(source)
+
+    if len(selected) < top_n:
+        for score, doc in scored_docs:
+            if doc not in selected:
+                selected.append(doc)
+            if len(selected) >= top_n:
+                break
+
+    return selected
 
 if __name__ == "__main__":
     from retrieval.retriever import load_vector_store, build_bm25_index, hybrid_search

@@ -64,6 +64,17 @@ TEST_QUESTIONS = [
     "relevant_sources": []
 },
 
+{
+    "question": "What are the key differences between CAMEL and AgentVerse?",
+    "ground_truth": "CAMEL uses role-playing for agent communication while AgentVerse creates decentralized ecosystems with specialized agent roles.",
+    "relevant_sources": ["CAMEL.pdf", "AgentVerse.pdf"]  # both are correct
+},
+{
+    "question": "How do agents communicate in a web of agents?",
+    "ground_truth": "Agents communicate through structured messaging protocols and multi-layered architectures.",
+    "relevant_sources": ["Internet of Agents.pdf", "CAMEL.pdf", "L2M2 Multi-agent Coordination.pdf"]
+},
+
 # Adversarial question 1 — asks about something NOT in your corpus
 {
     "question": "What is OpenAI's strategy for multi-agent systems?",
