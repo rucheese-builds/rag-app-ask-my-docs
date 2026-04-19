@@ -1,8 +1,5 @@
-# AgentLens — Ask the Research
-
-Query frontier Web of Agents research papers and enterprise AI 
-earnings calls in one place. Get cited answers tracing every 
-claim back to its source document and page number.
+# AgentLens —
+A cross-domain RAG engine performing simultaneous retrieval over foundational Web-of-Agents research and Enterprise AI earnings. Features hierarchical summary-indexing and intent-gating to ensure 100% cited accuracy with zero-hallucination tracing
 
 **Live demo:** [HuggingFace Spaces link — add after deployment]
 
