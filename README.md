@@ -1,5 +1,8 @@
-# AgentLens —
-A cross-domain RAG engine performing simultaneous retrieval over foundational Web-of-Agents research and Enterprise AI earnings. Features hierarchical summary-indexing and intent-gating to ensure 100% cited accuracy with zero-hallucination tracing
+# AgentLens — Ask the Research
+
+Query frontier Web of Agents research papers and enterprise AI 
+earnings calls in one place. Get cited answers tracing every 
+claim back to its source document and page number.
 
 **Live demo:** [HuggingFace Spaces link — add after deployment]
 
@@ -126,7 +129,11 @@ Added 5 adversarial question types:
 | MRR | 0.875 | 0.464 | -41% |
 | Precision@3 | 0.833 | 0.405 | -51% |
 | Recall@3 | 0.792 | 0.357 | -55% |
-| Semantic Similarity | 0.799 | 0.656 | -18% |
+| Semantic Similarity | 0.799 | 0.652 | -18% |
+
+Full evaluation set includes 4 standard domain questions 
+and 5 adversarial questions (semantic traps, out-of-corpus 
+queries, cross-document synthesis).
 
 ### Step 6 — Found the exact failure mode
 
@@ -201,6 +208,32 @@ Semantic traps — queries where domain keywords appear but meaning
 differs — cause retrieval to surface plausible but incorrect chunks. 
 Classification catches off-domain intent before retrieval runs.
 
+## Evaluation Paradox: Metrics vs Perceived Quality
+
+After implementing diversity reranking and larger chunks, automated 
+metrics dropped while human-perceived answer quality improved.
+
+| Metric | Before | After |
+|---|---|---|
+| Precision@3 | 0.405 | 0.286 |
+| MRR | 0.464 | 0.345 |
+| Semantic Similarity | 0.656 | 0.660 |
+
+Root cause: Diversity reranking deliberately introduces sources that 
+score lower on relevance to force cross-paper synthesis. Automated 
+metrics that measure whether a pre-defined correct source appears in 
+top-3 penalise this behaviour even when the resulting answer is richer.
+
+This reveals a fundamental limitation of single-source evaluation 
+frameworks for multi-document synthesis tasks. The correct evaluation 
+for a system designed to synthesise across sources would measure 
+answer completeness and source diversity, not source precision.
+
+Production solution: Multi-reference evaluation where each question 
+has multiple acceptable source documents, or LLM-as-judge evaluation 
+asking "is this answer well-synthesised from multiple sources?" rather 
+than "did it retrieve the correct document?"
+
 ---
 
 ## What I Would Do Differently in Production
@@ -231,6 +264,13 @@ Scaling LLM Test-Time Compute · Scaling Agent Systems · Toolformer
 Salesforce Q3+Q4 FY26 · Microsoft Q1 2026+Q4 2025 · 
 Nvidia Q3+Q4 2025 · Google Q3+Q4 2025 · 
 ServiceNow Q3+Q4 2025 · IBM Q3+Q4 2025
+
+## Demo
+
+![AgentPulse demo answer](assets/demo1.png)
+
+*Asking "What are the common challenges of scaling agents across research papers?" 
+synthesises findings from multiple papers with citations.*
 
 ---
 
