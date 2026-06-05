@@ -58,7 +58,7 @@ a first-class engineering problem. Here is the full story.
 ### Step 1 — Tried RAGAS (industry standard)
 
 RAGAS is the most widely used LLM-as-judge evaluation framework 
-for RAG systems. I implemented it first.
+for RAG systems. I started here to benchmark both my retrieval and generation steps.
 
 **Result:** NaN scores across faithfulness, answer relevancy, 
 and context precision when using local models (llama3.2, mistral).
@@ -80,8 +80,7 @@ doesn't exist in the registry. Legacy `trulens-eval` incompatible
 with current LangChain versions.
 
 **Lesson:** Rapidly evolving ML tooling means package 
-compatibility is a real engineering concern, not just 
-a footnote.
+compatibility is a real engineering concern, and just documentation can't be trusted.
 
 ### Step 3 — Built a custom three-tier evaluation framework
 
@@ -163,8 +162,7 @@ agents. The LLM faithfully answered based on those chunks —
 confident, cited, and entirely off-target.
 
 **This is why citation enforcement cannot save you from 
-wrong retrieval.** The problem must be caught before 
-retrieval runs, not after generation.
+wrong retrieval.** The problem must be caught  BEFORE RETRIEVAL RUNS, NOT AFTER GENERATION.
 
 ### Step 7 — Added query classification as the fix
 
