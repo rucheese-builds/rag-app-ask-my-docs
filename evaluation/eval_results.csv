@@ -1,19 +1,37 @@
 question,hit_rate,mrr,precision@3,recall@3,semantic_similarity,answer
-How do agents communicate with each other in a web of agents?,1.0,1.0,1.0,0.6666666666666666,0.7446471620043001," In the provided context, it is noted that agents can communicate using natural language dialogue [Source 1] and the communication between AI agents can occur within a cooperative setting [Source 2]. "
-What is the role of an orchestrator agent in multi-agent systems?,1.0,0.3333333333333333,0.3333333333333333,0.5,0.7890718169609648," Based on the context provided, there is no specific mention of an ""orchestrator agent"" in any of the sources. However, in BabyAGI [Source 1], multiple LLM-based agents work together to manage tasks w"
-How is Salesforce monetizing AI agents?,1.0,0.5,0.6666666666666666,1.0,0.7186140044890926," The context provides information on the exponential increase in bookings and the value delivered to customers after they become ""agentic enterprises"" with Salesforce [Source 1]. Additionally, it ment"
-What is Agentforce and how many deals has it closed?,1.0,0.5,0.3333333333333333,1.0,0.8081731125127964," Agentforce is an AI system developed by Salesforce. According to the provided context from Source 1, over 18,500 Agentforce deals have been closed [Source 1]."
-How do I build a web scraper to collect agent data?,0.0,0.0,0.0,0.0,0.422479305892624," I don't have enough information in my documents to build a web scraper to collect agent data specifically. However, the context provided suggests that there might be a data acquisition layer in a mul"
-What communication protocol should I use for my API?,0.0,0.0,0.0,0.0,0.45793191134757694," Based on the provided context, there is no specific mention of a communication protocol for an API. However, both Source 2 and Source 3 discuss research related to agent network protocols, specifical"
-What makes a good musical orchestration?,0.0,0.0,0.0,0.0,0.44657324384508423," I don't have enough information in my documents to answer this question, as the provided context does not contain any details related to musical orchestration."
-How do real estate agents find new clients?,0.0,0.0,0.0,0.0,0.47758814140942407," I don't have enough information in my documents to answer this question directly. The provided context only discusses AI, multi-agent systems, and their applications within Google and IBM, but there "
-Should I invest in crypto tokens in 2025?,0.0,0.0,0.0,0.0,0.45084381531705164," Based on the provided context, there is no direct information about cryptocurrency or investing in tokens. However, it is suggested that AI demand will significantly increase computing demands and th"
-What are the key differences between CAMEL and AgentVerse?,1.0,1.0,1.0,1.0,0.7567872387499305," I don't have enough information in my documents to directly compare the key differences between CAMEL and AgentVerse. However, based on the provided context, it can be inferred that:
+How do agents communicate with each other in a web of agents?,1.0,0.5,0.3333333333333333,0.3333333333333333,0.7967675412500181," In a web of agents, communication between agents can be either independent or decentralized, according to [Source 3]. In an independent communication topology, agents communicate only with the aggreg"
+What is the role of an orchestrator agent in multi-agent systems?,0.0,0.0,0.0,0.0,0.8207071158230896," In multi-agent systems, an orchestrator agent is not explicitly mentioned in the provided contexts. However, based on the descriptions of AgentVerse [Source 1], AutoGen [Source 2], and the Internet o"
+How is Salesforce monetizing AI agents?,1.0,1.0,0.6666666666666666,1.0,0.9377457027927293," Salesforce is monetizing AI agents in three distinct ways as stated in [Source 1]. First, they are upgrading their premium SKUs that contain embedded AI and unlimited access to agentic for employee u"
+What is Agentforce and how many deals has it closed?,0.0,0.0,0.0,0.0,0.8341502271926899," According to Source 1, Agentforce is an AI agent experience developed by Salesforce. It was introduced a year ago and, as of the Q3 FY26 earnings conference call, had closed over 18,500 deals, with 9"
+How do I build a web scraper to collect agent data?,0.0,0.0,0.0,0.0,0.4919093080412198," To build a web scraper for collecting agent data, you can utilize the Web Agent in OpenAgents [Source 2]. This agent is designed for autonomous web browsing. However, specific implementation details "
+What communication protocol should I use for my API?,1.0,0.0,1.0,1.0,0.5934931584972493,"This question appears to be outside the scope
+of my document corpus, which covers:
 
-1. CAMEL is an "
-How do agents communicate in a web of agents?,1.0,0.3333333333333333,0.3333333333333333,0.3333333333333333,0.6890774104028604," Agents in a web of agents communicate through a structure called the temporal feed-forward network (T-FFN) [Source 2]. This communication occurs during the ""Team Optimization"" stage, where the most c"
+- Web of Agents research papers
+- Multi-agent system architectures
+- Enterprise AI adoption (Salesforce, Microsoft, "
+What makes a good musical orchestration?,1.0,0.0,1.0,1.0,0.5934931584972493,"This question appears to be outside the scope
+of my document corpus, which covers:
+
+- Web of Agents research papers
+- Multi-agent system architectures
+- Enterprise AI adoption (Salesforce, Microsoft, "
+How do real estate agents find new clients?,1.0,0.0,1.0,1.0,0.5934931584972493,"This question appears to be outside the scope
+of my document corpus, which covers:
+
+- Web of Agents research papers
+- Multi-agent system architectures
+- Enterprise AI adoption (Salesforce, Microsoft, "
+Should I invest in crypto tokens in 2025?,1.0,0.0,1.0,1.0,0.5934931584972493,"This question appears to be outside the scope
+of my document corpus, which covers:
+
+- Web of Agents research papers
+- Multi-agent system architectures
+- Enterprise AI adoption (Salesforce, Microsoft, "
+What are the key differences between CAMEL and AgentVerse?,1.0,0.5,0.6666666666666666,0.5,0.5456963701834618," I don't have enough information in my documents to answer this question, as there is no context about AgentVerse in the provided sources."
+How do agents communicate in a web of agents?,1.0,0.3333333333333333,0.3333333333333333,0.3333333333333333,0.74127631678065," In a web of agents, communication occurs through explicit message passing in the orchestration layer [Source 2]. The Agent Registry Block in the DataLayer of the Internet of Agents manages active con"
 What is OpenAI's strategy for multi-agent systems?,0.0,0.0,0.0,0.0,0.505856724222538, I don't have enough information in my documents to answer this specific question about OpenAI's strategy for multi-agent systems. The provided context does not mention OpenAI.
-What are agents?,1.0,1.0,0.6666666666666666,0.3333333333333333,0.7946532862290216," Agents, in the context provided, refer to autonomous AI entities capable of collaborating and achieving greater intelligence and capabilities. [Source 1] These agents are based on Large Language Mode"
-How do academic research findings on agent coordination compare to how Salesforce implements it in Agentforce?,1.0,0.5,0.3333333333333333,0.5,0.7803750352891415," I don't have enough information in my documents to directly compare the academic research findings on agent coordination, specifically from [Source 1], with how Salesforce implements it in their prod"
-How many Agentic Work Units did Salesforce deliver in Q4?,1.0,1.0,0.6666666666666666,1.0,0.9843452741200951," In Q4, Salesforce delivered approximately 771 million Agentic Work Units [Source 1]."
-What are the key differences between CAMEL and AgentVerse approaches to multi-agent collaboration?,0.0,0.0,0.0,0.0,0.7411144411996291," According to the provided context, both CAMEL and AgentVerse provide infrastructure for agent collaboration [Source 1, Source 2]. However, there is no direct information on specific differences in th"
+What are agents?,1.0,1.0,0.6666666666666666,0.3333333333333333,0.7227452622897126," Agents, as mentioned in the context [Source 1], refer to language model-driven systems that operate through iterative cycles of reasoning, planning, and acting. They adapt their behavior based on env"
+How do academic research findings on agent coordination compare to how Salesforce implements it in Agentforce?,1.0,0.5,0.3333333333333333,0.5,0.7921256603487961," I don't have enough information in my documents to compare the academic research findings on agent coordination with how Salesforce implements it in Agentforce, as there is no mention of Agentforce o"
+How many Agentic Work Units did Salesforce deliver in Q4?,1.0,1.0,0.3333333333333333,1.0,0.9688958905901461," In Q4, Salesforce delivered 771 million Agentic Work Units [Source 1]."
+What are the key differences between CAMEL and AgentVerse approaches to multi-agent collaboration?,0.0,0.0,0.0,0.0,0.7035075878219523, I don't have enough information in my documents to compare CAMEL and AgentVerse approaches to multi-agent collaboration directly. Both systems are mentioned in the context but no specific details abo

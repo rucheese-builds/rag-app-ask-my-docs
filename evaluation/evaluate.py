@@ -1,279 +1,233 @@
+import sys
 import numpy as np
-from pathlib import Path
-from sklearn.metrics.pairwise import cosine_similarity
-from langchain_ollama import OllamaEmbeddings, OllamaLLM
-from retrieval.retriever import load_vector_store, build_bm25_index, hybrid_search
-from reranking.reranker import load_reranker, rerank
-from generation.generator import load_llm, generate_answer, format_context
 import csv
+import re
+from pathlib import Path
 
-TEST_QUESTIONS = [
-    {
-        "question": "How do agents communicate with each other in a web of agents?",
-        "ground_truth": "Agents communicate through structured messaging protocols, handshaking mechanisms, and multi-layered architectures that enable agent-to-agent interaction and coordination.",
-        "relevant_sources": ["Internet of Agents.pdf", "CAMEL.pdf", "L2M2 Multi-agent Coordination.pdf"]
-    },
-    {
-        "question": "What is the role of an orchestrator agent in multi-agent systems?",
-        "ground_truth": "An orchestrator agent manages and coordinates sub-agents by ranking and selecting them based on capability descriptions, delegating tasks, and performing continuous real-time evaluation.",
-        "relevant_sources": ["L2M2 Multi-agent Coordination.pdf", "AgentVerse.pdf"]
-    },
-    {
-        "question": "How is Salesforce monetizing AI agents?",
-        "ground_truth": "Salesforce monetizes AI agents through three ways: upgrading existing seats to premium SKUs with embedded AI, new app deployments with higher ROI, and consumption-based flex credits for customer-facing agentic use cases.",
-        "relevant_sources": ["Transcript-Salesforce-Inc-Q4-FY26-Earnings-Conference-Call-2-25-26.pdf"]
-    },
-    {
-        "question": "What is Agentforce and how many deals has it closed?",
-        "ground_truth": "Agentforce is Salesforce's multi-agent platform that closed 29,000 deals in its first 15 months, growing 50% quarter over quarter.",
-        "relevant_sources": ["Transcript-Salesforce-Inc-Q4-FY26-Earnings-Conference-Call-2-25-26.pdf"]
-    },
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-    # Semantic trap 1 — "web" means internet, not agent network
-{
-    "question": "How do I build a web scraper to collect agent data?",
-    "ground_truth": "Not in corpus.",
-    "relevant_sources": []
-},
+from sklearn.metrics.pairwise import cosine_similarity
+from langchain_ollama import OllamaEmbeddings
+from pipeline import load_pipeline, run_pipeline, OUT_OF_DOMAIN_RESPONSE
+from evaluation.metrics import (
+    get_eval_llm,
+    evaluate_faithfulness,
+    evaluate_answer_relevance,
+    evaluate_context_precision,
+    evaluate_context_recall
+)
 
-# Semantic trap 2 — "protocol" means communication etiquette, not agent protocol
-{
-    "question": "What communication protocol should I use for my API?",
-    "ground_truth": "Not in corpus.",
-    "relevant_sources": []
-},
+CSV_PATH = Path("evaluation/golden_dataset.csv")
+EVAL_RESULTS_PATH = Path("evaluation/eval_results_golden.csv")
 
-# Semantic trap 3 — "orchestration" means music, not agent orchestration  
-{
-    "question": "What makes a good musical orchestration?",
-    "ground_truth": "Not in corpus.",
-    "relevant_sources": []
-},
-
-# Semantic trap 4 — "agent" means real estate agent, not AI agent
-{
-    "question": "How do real estate agents find new clients?",
-    "ground_truth": "Not in corpus.",
-    "relevant_sources": []
-},
-
-# Semantic trap 5 — "token" means financial token, not LLM token
-{
-    "question": "Should I invest in crypto tokens in 2025?",
-    "ground_truth": "Not in corpus.",
-    "relevant_sources": []
-},
-
-{
-    "question": "What are the key differences between CAMEL and AgentVerse?",
-    "ground_truth": "CAMEL uses role-playing for agent communication while AgentVerse creates decentralized ecosystems with specialized agent roles.",
-    "relevant_sources": ["CAMEL.pdf", "AgentVerse.pdf"]  # both are correct
-},
-{
-    "question": "How do agents communicate in a web of agents?",
-    "ground_truth": "Agents communicate through structured messaging protocols and multi-layered architectures.",
-    "relevant_sources": ["Internet of Agents.pdf", "CAMEL.pdf", "L2M2 Multi-agent Coordination.pdf"]
-},
-
-# Adversarial question 1 — asks about something NOT in your corpus
-{
-    "question": "What is OpenAI's strategy for multi-agent systems?",
-    "ground_truth": "Not covered in the document corpus.",
-    "relevant_sources": []
-},
-
-# Adversarial question 2 — ambiguous, could match many documents
-{
-    "question": "What are agents?",
-    "ground_truth": "Agents are autonomous systems that can perceive their environment and take actions.",
-    "relevant_sources": ["Internet of Agents.pdf", "AgentVerse.pdf", "CAMEL.pdf"]
-},
-
-# Adversarial question 3 — requires synthesizing across documents
-{
-    "question": "How do academic research findings on agent coordination compare to how Salesforce implements it in Agentforce?",
-    "ground_truth": "Academic research describes multi-layered coordination protocols and dynamic agent selection, while Salesforce implements this through Agentforce's orchestration layer with MCP servers and Slack integration.",
-    "relevant_sources": ["L2M2 Multi-agent Coordination.pdf", "Transcript-Salesforce-Inc-Q4-FY26-Earnings-Conference-Call-2-25-26.pdf"]
-},
-
-# Adversarial question 4 — very specific number lookup
-{
-    "question": "How many Agentic Work Units did Salesforce deliver in Q4?",
-    "ground_truth": "Salesforce delivered approximately 771 million Agentic Work Units in Q4 FY26.",
-    "relevant_sources": ["Transcript-Salesforce-Inc-Q4-FY26-Earnings-Conference-Call-2-25-26.pdf"]
-},
-
-# Adversarial question 5 — cross-paper synthesis
-{
-    "question": "What are the key differences between CAMEL and AgentVerse approaches to multi-agent collaboration?",
-    "ground_truth": "CAMEL focuses on communicative agents using role-playing for problem solving, while AgentVerse creates decentralized ecosystems where agents take specialized roles including recruiter, critic, and worker.",
-    "relevant_sources": ["CAMEL.pdf", "AgentVerse.pdf"]
-},
-
-]
-
-# ── Tier 1: Retrieval metrics (free, no LLM needed) ────────────────────
-
-def compute_hit_rate(retrieved_docs, relevant_sources):
-    if not relevant_sources:
+def compute_hit_rate(retrieved_docs, relevant_sources_list):
+    if not relevant_sources_list:
         return 1.0 if not retrieved_docs else 0.0
-    retrieved_sources = [doc.metadata.get("source", "") for doc in retrieved_docs]
-    for rel in relevant_sources:
-        if any(rel in src for src in retrieved_sources):
+    retrieved_sources = [doc.metadata.get("source", "").lower() for doc in retrieved_docs]
+    for rel in relevant_sources_list:
+        if any(rel.lower() in src for src in retrieved_sources):
             return 1.0
     return 0.0
 
-def compute_mrr(retrieved_docs, relevant_sources):
-    retrieved_sources = [doc.metadata.get("source", "") for doc in retrieved_docs]
+def compute_mrr(retrieved_docs, relevant_sources_list):
+    if not relevant_sources_list:
+        return 1.0 if not retrieved_docs else 0.0
+    retrieved_sources = [doc.metadata.get("source", "").lower() for doc in retrieved_docs]
     for rank, src in enumerate(retrieved_sources):
-        if any(rel in src for rel in relevant_sources):
+        if any(rel.lower() in src for rel in relevant_sources_list):
             return 1.0 / (rank + 1)
     return 0.0
 
-def compute_precision_at_k(retrieved_docs, relevant_sources, k=3):
-    if not relevant_sources:
-        top_k = retrieved_docs[:k]
-        return 0.0 if top_k else 1.0
+def compute_precision_at_k(retrieved_docs, relevant_sources_list, k=3):
+    if not relevant_sources_list:
+        return 0.0 if retrieved_docs[:k] else 1.0
     top_k = retrieved_docs[:k]
     hits = sum(
         1 for doc in top_k
-        if any(rel in doc.metadata.get("source", "") for rel in relevant_sources)
+        if any(rel.lower() in doc.metadata.get("source", "").lower() for rel in relevant_sources_list)
     )
     return hits / k
 
-def compute_recall_at_k(retrieved_docs, relevant_sources, k=3):
-    if not relevant_sources:
+def compute_recall_at_k(retrieved_docs, relevant_sources_list, k=3):
+    if not relevant_sources_list:
         return 1.0 if not retrieved_docs else 0.0
     top_k = retrieved_docs[:k]
     retrieved_relevant = set(
-        doc.metadata.get("source", "") for doc in top_k
-        if any(rel in doc.metadata.get("source", "") for rel in relevant_sources)
+        doc.metadata.get("source", "").lower() for doc in top_k
+        if any(rel.lower() in doc.metadata.get("source", "").lower() for rel in relevant_sources_list)
     )
-    return len(retrieved_relevant) / len(relevant_sources)
-
-# ── Tier 2: Semantic similarity (free, embeddings only) ───────────────
+    return len(retrieved_relevant) / len(relevant_sources_list)
 
 def compute_semantic_similarity(answer, ground_truth, embedding_model):
-    answer_vec = embedding_model.embed_query(answer)
-    truth_vec = embedding_model.embed_query(ground_truth)
-    score = cosine_similarity([answer_vec], [truth_vec])[0][0]
-    return float(score)
-
-# ── Tier 3: TruLens (LLM-as-judge, local Ollama) ──────────────────────
-
-def run_trulens_evaluation(qa_pairs, reranked_docs_map):
-    print("\n=== Running TruLens Evaluation ===")
+    if "outside the scope" in ground_truth.lower() and "outside the scope" in answer.lower():
+        return 1.0
     try:
-        from trulens.core import TruSession
-        from trulens.core import Feedback
-        from trulens.providers.ollama import Ollama as TruOllama
-        from trulens.apps.basic import TruBasicApp
-
-        session = TruSession()
-        session.reset_database()
-
-        provider = TruOllama(model_engine="mistral")
-
-        f_relevance = Feedback(
-            provider.relevance_with_cot_reasons,
-            name="Answer Relevance"
-        ).on_input_output()
-
-        f_context_relevance = Feedback(
-            provider.context_relevance_with_cot_reasons,
-            name="Context Relevance"
-        ).on_input_output()
-
-        def rag_app(question):
-            return qa_pairs.get(question, "No answer available")
-
-        tru_app = TruBasicApp(
-            rag_app,
-            app_name="AgentLens-RAG",
-            feedbacks=[f_relevance, f_context_relevance]
-        )
-
-        for question in qa_pairs:
-            with tru_app as recording:
-                tru_app.app(question)
-
-        leaderboard = session.get_leaderboard()
-        print("\nTruLens Leaderboard:")
-        print(leaderboard.to_string())
-        leaderboard.to_csv("evaluation/trulens_results.csv", index=False)
-        print("TruLens results saved to evaluation/trulens_results.csv")
-        return leaderboard
-
+        answer_vec = embedding_model.embed_query(answer)
+        truth_vec = embedding_model.embed_query(ground_truth)
+        score = cosine_similarity([answer_vec], [truth_vec])[0][0]
+        return float(score)
     except Exception as e:
-        print(f"TruLens evaluation failed: {e}")
-        print("Tier 1 and Tier 2 results are still valid.")
-        return None
+        print(f"Embedding similarity failed: {e}")
+        return 0.0
 
-# ── Main evaluation runner ─────────────────────────────────────────────
+def compute_keyword_coverage(answer, mandatory_keywords_str, is_out_of_domain):
+    """
+    Checks if mandatory keywords appear in the answer (case-insensitive substring check).
+    For out-of-domain answers, if the model returns the out-of-domain response, score is 1.0, else 0.0.
+    """
+    if is_out_of_domain:
+        # Check if the answer indicates it is outside the scope or doesn't have info
+        is_correct_reject = (
+            "outside the scope" in answer.lower() or 
+            "don't have enough information" in answer.lower() or
+            "do not have enough information" in answer.lower()
+        )
+        return 1.0 if is_correct_reject else 0.0
+
+    if not mandatory_keywords_str:
+        return 1.0
+
+    keywords = [k.strip().lower() for k in mandatory_keywords_str.split(",") if k.strip()]
+    if not keywords:
+        return 1.0
+
+    matched = 0
+    ans_lower = answer.lower()
+    for kw in keywords:
+        # simple substring search
+        if kw in ans_lower:
+            matched += 1
+            
+    return matched / len(keywords)
 
 def run_evaluation():
-    print("=== Loading pipeline components ===")
-    vectorstore = load_vector_store()
-    bm25, documents = build_bm25_index(vectorstore)
-    reranker = load_reranker()
-    llm = load_llm()
+    print("=== Loading RAG pipeline & evaluation components ===")
+    vectorstore, bm25_indices, reranker, llm, expansion_node = load_pipeline()
     embedding_model = OllamaEmbeddings(model="nomic-embed-text")
+    eval_llm = get_eval_llm()
+
+    if not CSV_PATH.exists():
+        print(f"Error: Golden dataset not found at {CSV_PATH}. Please run seed_dataset.py first.")
+        return
+
+    # Load records from Golden Dataset
+    records = []
+    with open(CSV_PATH, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            records.append(row)
+
+    print(f"Loaded {len(records)} test questions from {CSV_PATH}")
 
     results = []
-    qa_pairs = {}
-
-    for item in TEST_QUESTIONS:
+    
+    for idx, item in enumerate(records):
         query = item["question"]
         ground_truth = item["ground_truth"]
-        relevant_sources = item["relevant_sources"]
+        keywords_str = item["mandatory_keywords"]
+        category = item["category"]
+        
+        # Sources are comma-separated in the CSV
+        sources_str = item.get("relevant_sources", "")
+        relevant_sources = [s.strip() for s in sources_str.split(",") if s.strip()]
 
-        print(f"\nEvaluating: {query}")
+        print(f"\n[{idx+1}/{len(records)}] Evaluating ({category}): '{query}'")
 
-        retrieved = hybrid_search(vectorstore, bm25, documents, query, k=20)
-        reranked = rerank(reranker, query, retrieved, top_n=3)
-        answer = generate_answer(llm, query, reranked)
-
-        qa_pairs[query] = answer
-
-        hit_rate = compute_hit_rate(reranked, relevant_sources)
-        mrr = compute_mrr(reranked, relevant_sources)
-        precision = compute_precision_at_k(reranked, relevant_sources, k=3)
-        recall = compute_recall_at_k(reranked, relevant_sources, k=3)
-        similarity = compute_semantic_similarity(
-            answer, ground_truth, embedding_model
+        # Run pipeline
+        res = run_pipeline(
+            query, vectorstore, bm25_indices, reranker, llm, expansion_node,
+            namespace="all", alpha=0.4, use_expansion=True
         )
+        answer = res["answer"]
+        reranked_docs = res.get("_reranked_docs", [])
+        is_out_of_domain = not res.get("in_domain", True)
+
+        # 1. Retrieval Metrics
+        hit_rate = compute_hit_rate(reranked_docs, relevant_sources)
+        mrr = compute_mrr(reranked_docs, relevant_sources)
+        precision = compute_precision_at_k(reranked_docs, relevant_sources, k=3)
+        recall = compute_recall_at_k(reranked_docs, relevant_sources, k=3)
+
+        # 2. Semantic Similarity
+        similarity = compute_semantic_similarity(answer, ground_truth, embedding_model)
+
+        # 3. Keyword Coverage (Fact Recall)
+        keyword_coverage = compute_keyword_coverage(answer, keywords_str, is_out_of_domain or category == "Negative" or "outside the scope" in ground_truth.lower())
+
+        # 4. Advanced LLM-as-a-judge metrics
+        context_text = "\n\n".join([doc.page_content for doc in reranked_docs])
+        
+        print("  Running LLM-as-a-judge metrics (Faithfulness, Answer Relevance, Context Precision/Recall)...")
+        faithfulness = evaluate_faithfulness(eval_llm, query, context_text, answer)
+        answer_relevance = evaluate_answer_relevance(eval_llm, query, answer)
+        context_precision = evaluate_context_precision(eval_llm, query, reranked_docs)
+        context_recall = evaluate_context_recall(eval_llm, ground_truth, context_text)
+
+        print(f"  Hit Rate:          {hit_rate:.4f} | MRR: {mrr:.4f}")
+        print(f"  Semantic Sim:      {similarity:.4f} | Keyword Coverage: {keyword_coverage:.4f}")
+        print(f"  Faithfulness:      {faithfulness:.4f} | Answer Relevance: {answer_relevance:.4f}")
+        print(f"  Context Precision: {context_precision:.4f} | Context Recall: {context_recall:.4f}")
 
         results.append({
             "question": query,
+            "category": category,
             "hit_rate": hit_rate,
             "mrr": mrr,
-            "precision@3": precision,
-            "recall@3": recall,
+            "precision_at_3": precision,
+            "recall_at_3": recall,
             "semantic_similarity": similarity,
-            "answer": answer[:200]
+            "keyword_coverage": keyword_coverage,
+            "faithfulness": faithfulness,
+            "answer_relevance": answer_relevance,
+            "context_precision": context_precision,
+            "context_recall": context_recall,
+            "generated_answer": answer.replace("\n", " ")[:150]
         })
 
-        print(f"  Hit Rate:            {hit_rate:.4f}")
-        print(f"  MRR:                 {mrr:.4f}")
-        print(f"  Precision@3:         {precision:.4f}")
-        print(f"  Recall@3:            {recall:.4f}")
-        print(f"  Semantic Similarity: {similarity:.4f}")
-
-    print("\n=== Overall Tier 1 + Tier 2 Results ===")
-    print(f"  Avg Hit Rate:            {np.mean([r['hit_rate'] for r in results]):.4f}")
-    print(f"  Avg MRR:                 {np.mean([r['mrr'] for r in results]):.4f}")
-    print(f"  Avg Precision@3:         {np.mean([r['precision@3'] for r in results]):.4f}")
-    print(f"  Avg Recall@3:            {np.mean([r['recall@3'] for r in results]):.4f}")
-    print(f"  Avg Semantic Similarity: {np.mean([r['semantic_similarity'] for r in results]):.4f}")
-
-    output_path = Path("evaluation/eval_results.csv")
-    with open(output_path, "w", newline="") as f:
+    # Save detailed evaluation outputs
+    with open(EVAL_RESULTS_PATH, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=results[0].keys())
         writer.writeheader()
         writer.writerows(results)
-    print(f"\nTier 1 + 2 results saved to {output_path}")
+    print(f"\nDetailed evaluation results saved to {EVAL_RESULTS_PATH}")
 
-    run_trulens_evaluation(qa_pairs, {})
+    # Sliced metrics calculation
+    categories = sorted(list(set(r["category"] for r in results)))
+    
+    print("\n" + "="*80)
+    print("📊 CATEGORY-SLICED METRICS SUMMARY")
+    print("="*80)
+    print(f"{'Category':<22} | {'Count':<5} | {'HitRate':<7} | {'Recall':<6} | {'SemSim':<6} | {'KeyCov':<6} | {'Faith':<5} | {'AnsRel':<6} | {'CtxPrec':<7} | {'CtxRec':<6}")
+    print("-"*106)
+    
+    for cat in categories:
+        cat_rows = [r for r in results if r["category"] == cat]
+        count = len(cat_rows)
+        avg_hit = np.mean([r["hit_rate"] for r in cat_rows])
+        avg_rec = np.mean([r["recall_at_3"] for r in cat_rows])
+        avg_sim = np.mean([r["semantic_similarity"] for r in cat_rows])
+        avg_key = np.mean([r["keyword_coverage"] for r in cat_rows])
+        avg_faith = np.mean([r["faithfulness"] for r in cat_rows])
+        avg_rel = np.mean([r["answer_relevance"] for r in cat_rows])
+        avg_cprec = np.mean([r["context_precision"] for r in cat_rows])
+        avg_crec = np.mean([r["context_recall"] for r in cat_rows])
+        
+        print(f"{cat:<22} | {count:<5} | {avg_hit:.4f} | {avg_rec:.4f} | {avg_sim:.4f} | {avg_key:.4f} | {avg_faith:.4f} | {avg_rel:.4f} | {avg_cprec:.4f} | {avg_crec:.4f}")
+
+    print("-"*106)
+    # Overall averages
+    avg_hit = np.mean([r["hit_rate"] for r in results])
+    avg_rec = np.mean([r["recall_at_3"] for r in results])
+    avg_sim = np.mean([r["semantic_similarity"] for r in results])
+    avg_key = np.mean([r["keyword_coverage"] for r in results])
+    avg_faith = np.mean([r["faithfulness"] for r in results])
+    avg_rel = np.mean([r["answer_relevance"] for r in results])
+    avg_cprec = np.mean([r["context_precision"] for r in results])
+    avg_crec = np.mean([r["context_recall"] for r in results])
+    
+    print(f"{'OVERALL AVERAGE':<22} | {len(results):<5} | {avg_hit:.4f} | {avg_rec:.4f} | {avg_sim:.4f} | {avg_key:.4f} | {avg_faith:.4f} | {avg_rel:.4f} | {avg_cprec:.4f} | {avg_crec:.4f}")
+    print("="*80)
 
 if __name__ == "__main__":
     run_evaluation()

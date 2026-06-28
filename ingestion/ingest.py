@@ -1,86 +1,167 @@
 import os
+import shutil
+import pickle
+import sys
 from pathlib import Path
-from langchain_community.document_loaders import PyPDFLoader
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
+from langchain_core.documents import Document
+from ingestion.parser import parse_pdf
+
+# Load environment variables
+load_dotenv()
 
 DATA_DIR = Path("data")
 CHROMA_DIR = Path("chroma_db")
+BM25_RESEARCH_PATH = Path("bm25_research.pkl")
+BM25_EARNINGS_PATH = Path("bm25_earnings.pkl")
 
-PAPER_DESCRIPTIONS = {
-    "Internet of Agents.pdf": "CLUSTER: Ecosystem & Internet. Proposes internet-scale architecture for connecting heterogeneous AI agents into collaborative networks. Focuses on connectivity layer and agent integration protocols.",
-    "Internet 3.0.pdf": "CLUSTER: Ecosystem & Internet. Introduces machine-native web ecosystem with AgentRank algorithm for agent discovery and governance. Focuses on trustworthy large-scale agent networks.",
-    "AgentVerse.pdf": "CLUSTER: Ecosystem & Internet. Multi-agent framework where agents take specialized roles (recruiter, critic, worker) in decentralized collaborative ecosystems.",
-    "AutoGen.pdf": "CLUSTER: Communication & Framework. Microsoft's practical framework for multi-agent conversation, tool use, and code execution. Focuses on building LLM applications through agent collaboration.",
-    "CAMEL.pdf": "CLUSTER: Communication & Framework. Academic role-playing framework for autonomous agent cooperation using natural language dialogue. Focuses on agent communication dynamics and scaling.",
-    "L2M2 Multi-agent Coordination.pdf": "CLUSTER: Communication & Framework. Orchestration framework where a manager agent decomposes tasks and assigns them to specialized sub-agents. Focuses on hierarchical coordination.",
-    "Dynamic LLM.pdf": "CLUSTER: Communication & Framework. Dynamic agent network where team composition adapts based on performance. Argues against fixed agent teams in favour of task-specific selection.",
-    "ReAct.pdf": "CLUSTER: Capabilities & Training. Foundation framework combining reasoning and acting in LLMs through thought-action-observation loops. Underpins most modern agent architectures.",
-    "Scaling LLM Google Deepmind.pdf": "CLUSTER: Capabilities & Training. Google DeepMind research on test-time compute scaling. Shows smaller models with more thinking time can outperform larger models.",
-    "Scaling Agent Systems.pdf": "CLUSTER: Capabilities & Training. First quantitative scaling laws for multi-agent systems. Mathematical framework predicting performance based on agent count and coordination structure.",
-    "OpenAgents.pdf": "CLUSTER: Deployment & Testing. Open platform for deploying language agents for everyday use. Focuses on user-friendly interfaces for data analysis, tool use, and web browsing.",
-    "AgentBench.pdf": "CLUSTER: Deployment & Testing. Benchmark for evaluating LLM agents across 8 environments. Focuses on evaluation methodology and metrics, NOT agent network architecture.",
+def get_namespace(pdf_path: Path) -> str:
+    """Determine the namespace for a PDF file based on its path and name."""
+    name = pdf_path.name.lower()
+    # Check if inside earning-reports directory or matches earnings/transcript keywords
+    if (pdf_path.parent.name == "earning-reports" or 
+        "earning" in name or 
+        "transcript" in name or 
+        "nvidiaan" in name):
+        return "earning-reports"
+    return "research"
+
+def load_and_parse_all() -> list[Document]:
+    """Scan both directories and parse all PDFs using the layout-aware parser."""
+    parsed_documents = []
     
-}
-
-def extract_section_header(text):
-    lines = text.strip().split('\n')
-    for line in lines[:5]:
-        line = line.strip()
-        if len(line) > 10 and len(line) < 100 and line[0].isupper():
-            return line
-    return ""
-
-def load_documents():
-    documents = []
-    pdf_files = list(DATA_DIR.glob("*.pdf"))
-    print(f"Found {len(pdf_files)} documents")
+    # Scan for PDFs in both namespace directories
+    pdf_files = list(DATA_DIR.glob("**/*.pdf"))
+    print(f"[Ingest] Found {len(pdf_files)} PDF documents to ingest.")
+    
     for pdf_path in pdf_files:
-        print(f"Loading: {pdf_path.name}")
-        loader = PyPDFLoader(str(pdf_path))
-        docs = loader.load()
-        description = PAPER_DESCRIPTIONS.get(pdf_path.name, "")
-        paper_title = pdf_path.stem
-        for doc in docs:
-            section_header = extract_section_header(doc.page_content)
-            header_prefix = f"{paper_title}"
-            if section_header:
-                header_prefix += f" > {section_header}"
-            header_prefix += "\n\n"
-            doc.page_content = header_prefix + doc.page_content
-            doc.metadata["source"] = pdf_path.name
-            doc.metadata["paper_description"] = description
-            doc.metadata["paper_title"] = paper_title
-        documents.extend(docs)
-    print(f"Total pages loaded: {len(documents)}")
-    return documents
+        namespace = get_namespace(pdf_path)
+        print(f"[Ingest] Parsing: {pdf_path.name} -> Namespace: {namespace}")
+        
+        try:
+            # Use our layout-aware parser
+            docs = parse_pdf(pdf_path)
+            for doc in docs:
+                doc.metadata["namespace"] = namespace
+                # Keep source and page from parser, add parser metadata
+            parsed_documents.extend(docs)
+        except Exception as e:
+            print(f"[Ingest] ERROR parsing {pdf_path.name}: {e}")
+            
+    print(f"[Ingest] Total pages parsed: {len(parsed_documents)}")
+    return parsed_documents
 
-def chunk_documents(documents):
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1024,
-        chunk_overlap=128,
+def build_hierarchical_chunks(documents: list[Document]) -> list[Document]:
+    """Split documents into parent and child chunks."""
+    print("[Ingest] Building hierarchical parent-child chunks...")
+    
+    # Parent splitter (larger context window)
+    parent_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1500,
+        chunk_overlap=200,
         separators=["\n\n", "\n", ".", " "]
     )
-    chunks = splitter.split_documents(documents)
-    print(f"Total chunks created: {len(chunks)}")
-    return chunks
+    
+    # Child splitter (dense semantic search segment)
+    child_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=400,
+        chunk_overlap=50,
+        separators=["\n\n", "\n", ".", " "]
+    )
+    
+    child_documents = []
+    parent_count = 0
+    
+    # Group documents by source file to create sequence parent IDs
+    for doc in documents:
+        source = doc.metadata.get("source", "unknown")
+        page = doc.metadata.get("page", 1)
+        namespace = doc.metadata.get("namespace", "research")
+        
+        # Split page content into parent chunks
+        parents = parent_splitter.split_text(doc.page_content)
+        
+        for parent_idx, parent_text in enumerate(parents):
+            parent_id = f"{source}_page{page}_p{parent_idx}"
+            parent_count += 1
+            
+            # Split this parent into child chunks
+            children = child_splitter.split_text(parent_text)
+            for child_idx, child_text in enumerate(children):
+                child_doc = Document(
+                    page_content=child_text,
+                    metadata={
+                        "parent_id": parent_id,
+                        "parent_content": parent_text,  # Directly embed parent text in metadata
+                        "source": source,
+                        "page": page,
+                        "namespace": namespace,
+                        "child_idx": child_idx
+                    }
+                )
+                child_documents.append(child_doc)
+                
+    print(f"[Ingest] Created {parent_count} parent chunks and {len(child_documents)} child chunks.")
+    return child_documents
 
-def create_vector_store(chunks):
-    print("Creating embeddings and storing in Chroma...")
-    embeddings = OllamaEmbeddings(model="nomic-embed-text:v1.5")
+def build_bm25_indices(child_chunks: list[Document]):
+    """Build and save separate BM25 indices for each namespace."""
+    print("[Ingest] Building separate BM25 indices for namespaces...")
+    from rank_bm25 import BM25Okapi
+    
+    # Separate chunks by namespace
+    research_docs = [doc for doc in child_chunks if doc.metadata["namespace"] == "research"]
+    earnings_docs = [doc for doc in child_chunks if doc.metadata["namespace"] == "earning-reports"]
+    
+    # Build research index
+    if research_docs:
+        tokenized_research = [doc.page_content.lower().split() for doc in research_docs]
+        bm25_research = BM25Okapi(tokenized_research)
+        with open(BM25_RESEARCH_PATH, "wb") as f:
+            pickle.dump({"bm25": bm25_research, "documents": research_docs}, f)
+        print(f"[Ingest] BM25 Research index built over {len(research_docs)} chunks.")
+        
+    # Build earnings index
+    if earnings_docs:
+        tokenized_earnings = [doc.page_content.lower().split() for doc in earnings_docs]
+        bm25_earnings = BM25Okapi(tokenized_earnings)
+        with open(BM25_EARNINGS_PATH, "wb") as f:
+            pickle.dump({"bm25": bm25_earnings, "documents": earnings_docs}, f)
+        print(f"[Ingest] BM25 Earnings index built over {len(earnings_docs)} chunks.")
+
+def create_vector_store(child_chunks: list[Document]):
+    """Recreate the vector store with child chunks."""
+    if CHROMA_DIR.exists():
+        print(f"[Ingest] Deleting existing database at {CHROMA_DIR}...")
+        shutil.rmtree(CHROMA_DIR)
+        
+    print("[Ingest] Creating embeddings and storing in Chroma...")
+    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    
+    # Batch insertion is safer for Chroma
     vectorstore = Chroma.from_documents(
-        documents=chunks,
+        documents=child_chunks,
         embedding=embeddings,
         persist_directory=str(CHROMA_DIR)
     )
-    print(f"Vector store created at {CHROMA_DIR}")
+    print(f"[Ingest] Chroma Vector store created at {CHROMA_DIR} containing {len(child_chunks)} child chunks.")
     return vectorstore
 
 if __name__ == "__main__":
     print("=== Starting ingestion pipeline ===")
-    documents = load_documents()
-    chunks = chunk_documents(documents)
-    create_vector_store(chunks)
+    parsed_docs = load_and_parse_all()
+    if not parsed_docs:
+        print("[Ingest] No documents parsed. Ingestion aborted.")
+        exit(1)
+        
+    child_chunks = build_hierarchical_chunks(parsed_docs)
+    build_bm25_indices(child_chunks)
+    create_vector_store(child_chunks)
     print("=== Ingestion complete ===")
-

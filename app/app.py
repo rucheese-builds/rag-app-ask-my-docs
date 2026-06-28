@@ -2,674 +2,825 @@ import streamlit as st
 import sys
 from pathlib import Path
 
+# Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pipeline import load_pipeline, run_pipeline
 
 st.set_page_config(
-    page_title="AgentPulse — AI Agent Intelligence",
+    page_title="AgentLens — Local RAG Intelligence Dashboard",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# Premium Modern CSS Injection
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Reset and Core Styles */
+*, *::before, *::after { box-sizing: border-box; }
 
-html, body, .stApp {
-    font-family: 'DM Sans', sans-serif;
-    background: #F7F8FC;
-    color: #1C1E2E;
+html, body, [data-testid="stAppViewContainer"] {
+    font-family: 'Inter', sans-serif !important;
+    background: #0B0F19 !important; /* Deep space dark background */
+    color: #F1F5F9 !important;
 }
 
-/* ── Remove top padding ── */
 [data-testid="stMainBlockContainer"] {
-    padding-top: 1rem !important;
-    padding-left: 2.5rem !important;
-    padding-right: 2.5rem !important;
-    max-width: 1100px;
+    padding-top: 1.5rem !important;
+    padding-left: 3rem !important;
+    padding-right: 3rem !important;
+    max-width: 1200px;
 }
-.block-container { padding-top: 0.5rem !important; }
 
-/* ── Sidebar ── */
+/* Typography overrides */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+}
+
+/* Sidebar Custom Styling */
 [data-testid="stSidebar"] {
-    background: #1C1E2E !important;
+    background-color: #0F172A !important; /* Slate 900 background */
+    border-right: 1px solid #1E293B !important;
 }
 [data-testid="stSidebar"] > div {
-    padding: 1.5rem 1.2rem;
+    padding: 2rem 1.5rem;
 }
 [data-testid="stSidebar"] * {
-    color: #CBD5E1 !important;
-    font-family: 'DM Sans', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
 }
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3 {
-    color: #ffffff !important;
-    font-size: 1rem !important;
-    font-weight: 600 !important;
-    margin-bottom: 0.5rem !important;
+    color: #FFFFFF !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
 }
-[data-testid="stSidebar"] p,
-[data-testid="stSidebar"] li,
-[data-testid="stSidebar"] span,
 [data-testid="stSidebar"] label {
-    font-size: 0.88rem !important;
+    font-size: 0.85rem !important;
     color: #94A3B8 !important;
-    line-height: 1.6 !important;
-}
-[data-testid="stSidebar"] hr {
-    border-color: rgba(255,255,255,0.08) !important;
-    margin: 0.8rem 0 !important;
-}
-[data-testid="stSidebar"] [data-testid="stMetric"] {
-    background: rgba(255,255,255,0.05) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 8px !important;
-    padding: 0.5rem 0.7rem !important;
-}
-[data-testid="stSidebar"] [data-testid="stMetricValue"] {
-    font-family: 'DM Mono', monospace !important;
-    font-size: 1.3rem !important;
-    color: #818CF8 !important;
-}
-[data-testid="stSidebar"] [data-testid="stMetricLabel"] {
-    font-size: 0.75rem !important;
-    color: #64748B !important;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-weight: 500 !important;
 }
 
-/* ── Header ── */
-.ap-header {
+/* Glassmorphic Cards */
+.glass-card {
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1.2rem !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.glass-card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, #FFFFFF 0%, #94A3B8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Gradient Header */
+.header-container {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.5rem 0 0.2rem 0;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #1E293B;
+    margin-bottom: 2rem;
 }
-.ap-logo {
-    width: 36px; height: 36px;
-    background: linear-gradient(135deg, #4F46E5, #818CF8);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; flex-shrink: 0;
+.header-logo {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #6366F1 0%, #A855F7 50%, #EC4899 100%);
+    padding: 8px 14px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
 }
-.ap-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1C1E2E;
-    letter-spacing: -0.02em;
+.header-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
-.ap-subtitle {
-    font-size: 0.85rem;
+.header-subtitle {
+    font-size: 0.9rem;
     color: #64748B;
-    margin: 0.2rem 0 1rem 0;
-    line-height: 1.5;
+    margin-top: 0.2rem;
 }
 
-/* ── Tabs ── */
-[data-testid="stTabs"] [data-baseweb="tab-list"] {
+/* Custom Streamlit Tabs styling */
+[data-testid="stTabs"] {
     background: transparent !important;
-    border-bottom: 2px solid #E2E8F0;
-    gap: 0; padding: 0;
+}
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    border-radius: 12px;
+    padding: 4px;
+    border: 1px solid #1E293B;
+    gap: 8px;
 }
 [data-testid="stTabs"] [data-baseweb="tab"] {
+    border-radius: 8px !important;
     background: transparent !important;
     border: none !important;
-    border-bottom: 2px solid transparent !important;
-    margin-bottom: -2px;
-    padding: 0.5rem 1rem;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.87rem;
-    font-weight: 500;
-    color: #64748B;
+    padding: 8px 24px !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    color: #94A3B8 !important;
+    transition: all 0.2s ease !important;
 }
 [data-testid="stTabs"] [aria-selected="true"] {
-    color: #4F46E5 !important;
-    border-bottom-color: #4F46E5 !important;
+    background: #1E293B !important;
+    color: #6366F1 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
 }
 
-/* ── Domain pills ── */
+/* Buttons */
 .stButton > button {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 0.82rem !important;
-    border-radius: 8px !important;
-    border: 1.5px solid #E2E8F0 !important;
-    background: #ffffff !important;
-    color: #374151 !important;
-    padding: 0.5rem 0.7rem !important;
-    text-align: left !important;
-    width: 100% !important;
-    white-space: normal !important;
-    height: auto !important;
-    transition: all 0.15s ease !important;
-    line-height: 1.4 !important;
-    font-weight: 400 !important;
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%) !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 0.6rem 1.5rem !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3) !important;
+    width: 100%;
 }
 .stButton > button:hover {
-    border-color: #4F46E5 !important;
-    color: #4F46E5 !important;
-    background: #EEF2FF !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45) !important;
 }
-.stButton > button[kind="primary"] {
-    background: #4F46E5 !important;
-    border-color: #4F46E5 !important;
-    color: #ffffff !important;
-    font-weight: 600 !important;
-}
-.stButton > button[kind="primary"]:hover {
-    background: #4338CA !important;
-    border-color: #4338CA !important;
+.stButton > button:active {
+    transform: translateY(1px) !important;
 }
 
-/* ── Text input ── */
-.stTextInput > div > div > input {
-    font-family: 'DM Sans', sans-serif !important;
-    background: #ffffff !important;
-    border: 1.5px solid #E2E8F0 !important;
-    border-radius: 10px !important;
-    color: #1C1E2E !important;
-    font-size: 0.93rem !important;
-    padding: 0.65rem 1rem !important;
+/* Inactive suggested Q buttons */
+.suggested-q-btn > div > button {
+    background: rgba(30, 41, 59, 0.5) !important;
+    border: 1px solid rgba(255,255,255,0.06) !important;
+    color: #CBD5E1 !important;
+    font-weight: 400 !important;
+    box-shadow: none !important;
+    text-align: left !important;
+    font-size: 0.85rem !important;
 }
-.stTextInput > div > div > input:focus {
-    border-color: #4F46E5 !important;
-    box-shadow: 0 0 0 3px rgba(79,70,229,0.1) !important;
-}
-.stTextInput > div > div > input::placeholder { color: #94A3B8 !important; }
-
-/* ── Selected question display ── */
-.selected-q {
-    background: #EEF2FF;
-    border: 1.5px solid #4F46E5;
-    border-radius: 10px;
-    padding: 0.7rem 1rem;
-    font-size: 0.9rem;
-    color: #1C1E2E;
-    margin-bottom: 0.6rem;
-    line-height: 1.4;
+.suggested-q-btn > div > button:hover {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border-color: #6366F1 !important;
+    color: #FFFFFF !important;
 }
 
-/* ── Answer card ── */
-.answer-card {
-    background: #ffffff;
-    border: 1.5px solid #E2E8F0;
-    border-left: 4px solid #4F46E5;
-    border-radius: 0 12px 12px 0;
-    padding: 1.4rem 1.6rem;
-    margin: 0.8rem 0;
+/* Beautiful Answer Box */
+.answer-box {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.05) 100%) !important;
+    border: 1.5px solid rgba(99, 102, 241, 0.3) !important;
+    border-left: 5px solid #6366F1 !important;
+    border-radius: 12px;
+    padding: 1.5rem;
     line-height: 1.8;
-    color: #1C1E2E;
-    font-size: 0.92rem;
+    color: #F1F5F9;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-/* ── Source badges ── */
-.source-badge {
+/* Source Badges */
+.badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    background: #EEF2FF;
-    border: 1px solid #C7D2FE;
-    border-radius: 20px;
-    padding: 0.18rem 0.65rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.71rem;
-    color: #4338CA;
-    margin: 0.2rem 0.2rem 0 0;
-    font-weight: 500;
-}
-.source-badge.earnings {
-    background: #F0FDF4;
-    border-color: #86EFAC;
-    color: #166534;
-}
-
-/* ── Thinking box ── */
-.thinking-box {
-    background: #F8FAFC;
-    border: 1px dashed #CBD5E1;
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.77rem;
-    color: #64748B;
-    line-height: 1.7;
-}
-
-/* ── Section label ── */
-.section-label {
-    font-size: 0.71rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    gap: 0.4rem;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    border-radius: 30px;
+    padding: 0.3rem 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
     color: #94A3B8;
-    margin-bottom: 0.6rem;
+}
+.badge.research {
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #818CF8;
+    background: rgba(99, 102, 241, 0.1);
+}
+.badge.earnings {
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #34D399;
+    background: rgba(16, 185, 129, 0.1);
 }
 
-/* ── Expander ── */
-[data-testid="stExpander"] {
-    background: #ffffff !important;
-    border: 1px solid #E2E8F0 !important;
-    border-radius: 10px !important;
-    margin-bottom: 0.4rem !important;
-}
-
-/* ── About/Benchmarking cards ── */
-.info-card {
-    background: #ffffff;
-    border: 1.5px solid #E2E8F0;
+/* Visualizer Flowchart */
+.vis-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid #1E293B;
     border-radius: 12px;
-    padding: 1.2rem 1.4rem;
-    margin-bottom: 0.8rem;
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
 }
-.info-card h3 {
-    font-size: 0.95rem;
+.vis-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.vis-node {
+    flex: 1;
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.6rem;
+    text-align: center;
+    font-size: 0.8rem;
+}
+.vis-node.highlight {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: #6366F1;
     font-weight: 600;
-    color: #1C1E2E;
-    margin-bottom: 0.4rem;
 }
-.info-card p {
-    font-size: 0.83rem;
+.vis-arrow {
     color: #64748B;
-    line-height: 1.6;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* ── Metric cards ── */
-.metric-card {
-    background: #ffffff;
-    border: 1.5px solid #E2E8F0;
+/* Metric Display Card */
+.metric-box {
+    position: relative;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid #1E293B;
     border-radius: 12px;
-    padding: 1.1rem;
+    padding: 1rem;
     text-align: center;
 }
-.metric-val {
-    font-family: 'DM Mono', monospace;
-    font-size: 1.9rem;
-    font-weight: 600;
-    color: #4F46E5;
-    line-height: 1;
-    margin-bottom: 0.25rem;
+.metric-box.has-tooltip {
+    cursor: help;
 }
-.metric-val.red { color: #E11D48; }
+.metric-box .tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    color: #E2E8F0 !important;
+    text-align: center;
+    border-radius: 8px;
+    padding: 0.8rem !important;
+    position: absolute;
+    z-index: 99999 !important;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+    font-size: 0.75rem !important;
+    line-height: 1.4 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+    pointer-events: none;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+.metric-box:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.metric-box .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+}
+.metric-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #6366F1;
+}
 .metric-lbl {
     font-size: 0.75rem;
     color: #64748B;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 500;
-}
-.metric-ctx {
-    font-size: 0.7rem;
-    color: #94A3B8;
-    margin-top: 0.2rem;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
 }
 
-hr { border-color: #E2E8F0 !important; }
-
-/* ── Hide Streamlit branding ── */
-#MainMenu, footer, header { visibility: hidden; }
+/* Hide default streamlit elements */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
+# Domain suggestions dataset (updated with namespaces and paper links)
 DOMAINS = {
-    "🏗️ Architecture": {
-        "papers": ["Internet of Agents", "Internet 3.0", "AgentVerse"],
-        "description": "Large-scale agent network architectures",
+    "🌐 System Architecture": {
+        "namespace": "research",
+        "description": "Distributed agent protocols",
         "questions": [
             "How does the Internet of Agents differ from traditional multi-agent systems?",
-            "What is the DOVIS protocol in Internet 3.0?",
-            "How does AgentVerse organize agents into collaborative ecosystems?",
+            "What is the AgentRank algorithm in Internet 3.0?",
+            "How does AgentVerse structure collaborative agent ecosystems?",
+        ],
+        "papers": [
+            {"name": "Internet of Agents", "url": "https://arxiv.org/abs/2407.07061"},
+            {"name": "AgentVerse", "url": "https://arxiv.org/abs/2308.10848"},
+            {"name": "Internet 3.0", "url": "https://arxiv.org/abs/2509.04979"},
+            {"name": "OpenAgents", "url": "https://arxiv.org/abs/2310.10634"}
         ]
     },
-    "📡 Protocols": {
-        "papers": ["AutoGen", "CAMEL", "L2M2", "DyLAN"],
-        "description": "Agent communication frameworks",
+    "📡 Agent Collaboration": {
+        "namespace": "research",
+        "description": "Conversation and orchestration",
         "questions": [
             "How does AutoGen handle multi-agent conversation?",
             "What is role-playing in the CAMEL framework?",
             "How does L2M2 orchestrate sub-agents for complex tasks?",
+        ],
+        "papers": [
+            {"name": "Autogen", "url": "https://arxiv.org/abs/2308.08155"},
+            {"name": "CAMEL", "url": "https://arxiv.org/abs/2303.17760"},
+            {"name": "L2M2 multi-agent coordination", "url": "https://arxiv.org/abs/2502.14743"}
         ]
     },
-    "🛠️ Foundations": {
-        "papers": ["ReAct", "Scaling LLM", "Scaling Agent Systems"],
-        "description": "Core reasoning and scaling research",
+    "🧠 Reasoning & Scaling": {
+        "namespace": "research",
+        "description": "Reasoning loops and scaling laws",
         "questions": [
             "How does ReAct combine reasoning and acting in language models?",
             "What are the scaling laws for multi-agent systems?",
             "How does test-time compute scaling improve agent performance?",
+        ],
+        "papers": [
+            {"name": "ReACT", "url": "https://arxiv.org/abs/2210.03629"},
+            {"name": "Scaling Agent systems Google Deepmind", "url": "https://arxiv.org/abs/2512.08296v2"},
+            {"name": "Scaling LLM Google Deepmind", "url": "https://arxiv.org/abs/2408.03314"},
+            {"name": "Dynamic LLM", "url": "https://arxiv.org/abs/2310.02170"},
+            {"name": "AgentBench", "url": "https://arxiv.org/abs/2308.03688"}
         ]
     },
-    "📊 Evaluation": {
-        "papers": ["AgentBench", "OpenAgents"],
-        "description": "Benchmarking and deployment",
-        "questions": [
-            "What environments does AgentBench use to evaluate LLMs as agents?",
-            "How does OpenAgents make language agents accessible to non-experts?",
-            "What are the main failure modes found in AgentBench evaluations?",
-        ]
-    },
-    "💰 Earnings": {
-        "papers": ["Salesforce", "Microsoft", "Nvidia", "Google", "ServiceNow", "IBM"],
-        "description": "Enterprise AI adoption",
+    "💰 Enterprise AI Adoption": {
+        "namespace": "earning-reports",
+        "description": "Earnings transcripts analysis",
         "questions": [
             "How is Salesforce monetizing Agentforce?",
-            "What did Microsoft say about AI agents in their earnings call?",
-            "How is Nvidia supporting enterprise AI agent infrastructure?",
+            "What did Microsoft say about enterprise agentic AI tools?",
+            "How many deals has Salesforce Agentforce closed in its first 15 months?",
+        ],
+        "papers": [
+            {"name": "Salesforce IR", "url": "https://investor.salesforce.com"},
+            {"name": "Microsoft IR", "url": "https://www.microsoft.com/investor"},
+            {"name": "NVIDIA IR", "url": "https://investor.nvidia.com"},
+            {"name": "ServiceNow IR", "url": "https://investor.servicenow.com"},
+            {"name": "Google IR", "url": "https://abc.xyz/investor"},
+            {"name": "IBM IR", "url": "https://www.ibm.com/investor"}
         ]
     },
 }
 
+# Load the upgraded RAG pipeline
 @st.cache_resource
-def initialize_pipeline():
+def get_pipeline():
     return load_pipeline()
 
-def render_sidebar():
-    with st.sidebar:
-        st.markdown("### ⚡ AgentPulse")
-        st.markdown("AI Agent Intelligence Platform")
-        st.divider()
+vectorstore, bm25_indices, reranker, llm, expansion_node = get_pipeline()
 
-        st.markdown("### Database")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Papers", "12")
-            st.metric("Chunks", "5,308")
-        with col2:
-            st.metric("Calls", "12")
-            st.metric("Pages", "~740")
-
-        st.divider()
-        st.markdown("### Pipeline")
-        for step in [
-            "🔀 BM25 + vector search",
-            "⚖️ RRF fusion (k=60)",
-            "🎯 Cross-encoder rerank",
-            "💬 Mistral generation",
-        ]:
-            st.markdown(step)
-
-        st.divider()
-        st.markdown("### Evaluation")
-        st.markdown("Standard: Hit Rate **1.00**")
-        st.markdown("Adversarial: Hit Rate **0.50**")
-        st.caption("See Benchmarking tab for full results.")
-
-        st.divider()
-        st.markdown("[📂 GitHub](https://github.com/rucheese-builds/rag-app-ask-my-docs)")
-
-def render_results(result, query):
-    if not result["in_domain"]:
-        st.warning(
-            "⚠️ This question is outside my document corpus. "
-            "Please ask about AI agents, multi-agent systems, or enterprise AI adoption."
-        )
-        return
-
-    st.success("✅ Retrieved from corpus")
-
-    with st.expander("🔍 Thinking process", expanded=False):
-        sources_used = [s['source'] for s in result['sources']]
-        st.markdown(f"""<div class='thinking-box'>
-Query: {query}<br>
-Classification: IN_DOMAIN ✓<br>
-Retrieval: BM25 (k=20) + Vector (k=20) → RRF fusion → top 5<br>
-Reranking: cross-encoder/ms-marco-MiniLM-L-6-v2 → top 3<br>
-Sources: {' · '.join(sources_used)}
-</div>""", unsafe_allow_html=True)
-
-    st.markdown(
-        '<p class="section-label" style="margin-top:1rem">Answer</p>',
-        unsafe_allow_html=True
-    )
-    st.markdown(
-        f"<div class='answer-card'>{result['answer']}</div>",
-        unsafe_allow_html=True
-    )
-
-    if result["sources"]:
-        st.markdown(
-            '<p class="section-label" style="margin-top:1rem">Sources</p>',
-            unsafe_allow_html=True
-        )
-        badges = ""
-        for s in result["sources"]:
-            stype = s.get("source_type", "research")
-            cls = "source-badge earnings" if stype == "earnings" else "source-badge"
-            icon = "💰" if stype == "earnings" else "📄"
-            badges += f"<span class='{cls}'>{icon} [{s['index']}] {s['source']} p.{s['page']}</span>"
-        st.markdown(badges, unsafe_allow_html=True)
-
-        st.markdown(
-            '<p class="section-label" style="margin-top:1rem">Retrieved chunks</p>',
-            unsafe_allow_html=True
-        )
-        for s in result["sources"]:
-            with st.expander(f"[{s['index']}] {s['source']} — page {s['page']}"):
-                st.markdown(f"*{s['content']}*")
-
-def render_explorer_tab(vectorstore, bm25, documents, reranker, llm):
-    st.markdown(
-        '<p class="ap-subtitle">Query 12 frontier research papers and '
-        '12 enterprise AI earnings calls. Every answer cites its source.</p>',
-        unsafe_allow_html=True
-    )
-
-    if "active_domain" not in st.session_state:
-        st.session_state.active_domain = None
-    if "pending_query" not in st.session_state:
-        st.session_state.pending_query = ""
-    if "selected_q_idx" not in st.session_state:
-        st.session_state.selected_q_idx = None
-    if "run_query" not in st.session_state:
-        st.session_state.run_query = False
-
-    st.markdown(
-        '<p class="section-label">Knowledge Domains</p>',
-        unsafe_allow_html=True
-    )
-
-    cols = st.columns(5)
-    for i, (domain_key, domain_data) in enumerate(DOMAINS.items()):
-        with cols[i]:
-            is_active = st.session_state.active_domain == domain_key
-            if st.button(
-                f"{domain_key}\n{domain_data['description']}",
-                key=f"domain_{i}",
-                use_container_width=True,
-                type="primary" if is_active else "secondary"
-            ):
-                st.session_state.active_domain = domain_key
-                st.session_state.pending_query = ""
-                st.session_state.selected_q_idx = None
-                st.rerun()
-
-    if st.session_state.active_domain:
-        domain = st.session_state.active_domain
-        data = DOMAINS[domain]
-
-        st.markdown(
-            f'<p class="section-label" style="margin-top:1.2rem">'
-            f'Suggested questions — {domain}</p>',
-            unsafe_allow_html=True
-        )
-        st.caption(f"Papers: {' · '.join(data['papers'])}")
-
-        q_cols = st.columns(3)
-        for i, q in enumerate(data["questions"]):
-            with q_cols[i]:
-                is_sel = st.session_state.selected_q_idx == i
-                if st.button(
-                    q,
-                    key=f"sq_{domain}_{i}",
-                    use_container_width=True,
-                    type="primary" if is_sel else "secondary"
-                ):
-                    st.session_state.pending_query = q
-                    st.session_state.selected_q_idx = i
-                    st.session_state.run_query = True
-                    st.rerun()
-
+# ── Sidebar Configurations ──
+with st.sidebar:
+    st.markdown("## ⚡ AgentLens")
+    st.markdown("<p style='color: #64748B; font-size: 0.8rem; margin-top:-0.5rem;'>Advanced RAG Intelligence Platform</p>", unsafe_allow_html=True)
     st.divider()
-    st.markdown(
-        '<p class="section-label">Ask anything</p>',
-        unsafe_allow_html=True
+    
+    st.markdown("### Search Settings")
+    
+    # 1. Namespace Selector
+    namespace_mode = st.selectbox(
+        "Corpus Namespace",
+        options=["all", "research", "earning-reports"],
+        format_func=lambda x: {
+            "all": "All Documents",
+            "research": "Research Papers (/research)",
+            "earning-reports": "Earnings Calls (/earning-reports)"
+        }[x]
     )
-
-    if st.session_state.pending_query:
-        st.markdown(
-            f"<div class='selected-q'>🔍 <b>Selected:</b> "
-            f"{st.session_state.pending_query}</div>",
-            unsafe_allow_html=True
-        )
-
-    typed_query = st.text_input(
-        "Or type your own question",
-        value="",
-        placeholder="e.g. How do agents communicate in a web of agents?",
-        key="typed_input",
-        label_visibility="collapsed"
+    
+    # 2. Query Expansion Toggle
+    use_expansion = st.toggle("Enable Query Expansion", value=True, help="Run queries through Mistral to expand contextual keywords before database lookup.")
+    
+    # 3. Alpha Slider (Convex Fusion Weight)
+    alpha = st.slider(
+        "Convex Weight (α)",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.4,
+        step=0.05,
+        help="α = 1.0 (pure Vector Search) | α = 0.0 (pure Keyword BM25). Set lower (e.g. 0.4) to prioritize precise keywords and technical acronyms."
     )
-
-    run_button = st.button(
-        "⚡ Search",
-        type="primary",
-        use_container_width=True
-    )
-
-    if run_button or st.session_state.run_query:
-        st.session_state.run_query = False
-        active_query = typed_query.strip() or st.session_state.pending_query.strip()
-
-        if not active_query:
-            st.warning("Please select a question or type your own.")
-            return
-
-        with st.spinner("Searching corpus..."):
-            result = run_pipeline(
-                active_query,
-                vectorstore, bm25, documents, reranker, llm
-            )
-
-        st.divider()
-        render_results(result, active_query)
-
-def render_benchmarking_tab():
-    st.markdown(
-        '<p class="section-label">Standard evaluation (4 domain questions)</p>',
-        unsafe_allow_html=True
-    )
-    cols = st.columns(3)
-    for col, (val, lbl, ctx) in zip(cols, [
-        ("1.00", "Hit Rate", "Every query found correct source"),
-        ("0.875", "MRR", "Correct source ranked #1"),
-        ("0.799", "Semantic Sim.", "Answer vs ground truth"),
-    ]):
-        with col:
-            st.markdown(f"""<div class='metric-card'>
-<div class='metric-val'>{val}</div>
-<div class='metric-lbl'>{lbl}</div>
-<div class='metric-ctx'>{ctx}</div>
-</div>""", unsafe_allow_html=True)
-
-    st.markdown(
-        '<p class="section-label" style="margin-top:1.2rem">'
-        'After adversarial stress test (9 questions incl. semantic traps)</p>',
-        unsafe_allow_html=True
-    )
-    cols2 = st.columns(3)
-    for col, (val, lbl, ctx) in zip(cols2, [
-        ("0.50", "Hit Rate", "-50% drop"),
-        ("0.464", "MRR", "-41% drop"),
-        ("0.656", "Semantic Sim.", "-18% drop"),
-    ]):
-        with col:
-            st.markdown(f"""<div class='metric-card'>
-<div class='metric-val red'>{val}</div>
-<div class='metric-lbl'>{lbl}</div>
-<div class='metric-ctx'>{ctx}</div>
-</div>""", unsafe_allow_html=True)
-
+    
     st.divider()
-    st.markdown(
-        '<p class="section-label">Methodology</p>',
-        unsafe_allow_html=True
-    )
-    col1, col2 = st.columns(2)
-    with col1:
-        for title, body in [
-            ("Tier 1 — Retrieval metrics",
-             "Deterministic metrics with no LLM judge. Hit Rate, MRR, Precision@3, Recall@3."),
-            ("Tier 3 — LLM-as-judge (attempted)",
-             "RAGAS and TruLens both failed with local models. Require frontier models for reliable scoring."),
-        ]:
-            st.markdown(
-                f"<div class='info-card'><h3>{title}</h3><p>{body}</p></div>",
-                unsafe_allow_html=True
-            )
-    with col2:
-        for title, body in [
-            ("Tier 2 — Semantic similarity",
-             "Cosine similarity between answer and ground truth using nomic-embed-text. Free, no LLM needed."),
-            ("Stress testing",
-             "Added semantic traps, out-of-corpus queries, cross-document synthesis, and precise factual lookups."),
-        ]:
-            st.markdown(
-                f"<div class='info-card'><h3>{title}</h3><p>{body}</p></div>",
-                unsafe_allow_html=True
-            )
-
-def render_about_tab():
-    col1, col2 = st.columns([3, 2])
-    with col1:
-        for title, body in [
-            ("What is AgentPulse?",
-             "A domain-specific RAG system over 12 Web of Agents research papers and 12 enterprise AI earnings call transcripts. Query both simultaneously and get cited answers tracing every claim to its source."),
-            ("Why this corpus?",
-             "The unique value is cross-corpus synthesis. Academic papers describe agent architectures formally. Enterprise earnings calls describe the same concepts in business language. AgentPulse bridges both."),
-            ("Limitations",
-             "Generation uses Mistral 7B via Ollama. Complex multi-hop reasoning works better with frontier models like GPT-4o or Claude. The retrieval pipeline is strong — generation is the current bottleneck."),
-        ]:
-            st.markdown(
-                f"<div class='info-card'><h3>{title}</h3><p>{body}</p></div>",
-                unsafe_allow_html=True
-            )
-    with col2:
-        for title, body in [
-            ("Research Papers (12)",
-             "Internet of Agents · Internet 3.0 · AgentVerse · AutoGen · CAMEL · L2M2 · DyLAN · ReAct · Scaling Agent Systems · Scaling LLM Compute · AgentBench · OpenAgents"),
-            ("Earnings Calls (12)",
-             "Salesforce Q3+Q4 FY26 · Microsoft Q1+Q4 2025 · Nvidia Q3+Q4 2025 · Google Q3+Q4 2025 · ServiceNow Q3+Q4 2025 · IBM Q3+Q4 2025"),
-            ("Tech Stack",
-             "LangChain · ChromaDB · rank-bm25 · sentence-transformers · Mistral via Ollama · Streamlit"),
-        ]:
-            st.markdown(
-                f"<div class='info-card'><h3>{title}</h3><p>{body}</p></div>",
-                unsafe_allow_html=True
-            )
-
-def main():
-    render_sidebar()
-
+    
+    # Database Stats
+    st.markdown("### Database Indices")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(f"<div class='metric-box'><div class='metric-val'>12</div><div class='metric-lbl'>Research</div></div>", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"<div class='metric-box'><div class='metric-val'>13</div><div class='metric-lbl'>Earnings</div></div>", unsafe_allow_html=True)
+        
+    st.markdown(f"<div class='metric-box' style='margin-top:0.5rem'><div class='metric-val'>{vectorstore._collection.count()}</div><div class='metric-lbl'>Parent-Child Indexed Nodes</div></div>", unsafe_allow_html=True)
+    
+    st.divider()
     st.markdown("""
-    <div class='ap-header'>
-        <div class='ap-logo'>⚡</div>
-        <span class='ap-title'>AgentPulse</span>
+    <div style='text-align: center; color: #64748B; font-size: 0.8rem;'>
+        <a href="https://github.com/rucheese-builds/rag-app-ask-my-docs" target="_blank" style="color: #CBD5E1; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-weight: 500;">
+            <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            GitHub Repository
+        </a>
+        <div style='margin-top: 5px;'>⚡ Built By: <b>Ruchi Agarwal</b></div>
     </div>
     """, unsafe_allow_html=True)
 
-    vectorstore, bm25, documents, reranker, llm = initialize_pipeline()
+# ── Header ──
+st.markdown("""
+<div class='header-container'>
+    <div class='header-logo'>⚡</div>
+    <div>
+        <div class='header-title'>AgentLens</div>
+        <div class='header-subtitle' style='margin-bottom: 8px;'>A local RAG system designed to query a corpus of the latest academic research on Web-of-Agents alongside earnings calls from top enterprise AI companies</div>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: #64748B;">
+            <a href="https://github.com/rucheese-builds/rag-app-ask-my-docs" target="_blank" style="display: flex; align-items: center; gap: 5px; color: #94A3B8; text-decoration: none; font-weight: 500;">
+                <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                GitHub Repository
+            </a>
+            <span>•</span>
+            <span>⚡ Built By: <b>Ruchi Agarwal</b></span>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-    tab1, tab2, tab3 = st.tabs(["🔍 Explorer", "📊 Benchmarking", "ℹ️ About"])
+# Load dynamic suggestions from golden dataset
+import csv
+import pandas as pd
 
-    with tab1:
-        render_explorer_tab(vectorstore, bm25, documents, reranker, llm)
-    with tab2:
-        render_benchmarking_tab()
-    with tab3:
-        render_about_tab()
+def load_golden_suggestions():
+    csv_path = Path("evaluation/golden_dataset.csv")
+    if not csv_path.exists():
+        return []
+    records = []
+    try:
+        with open(csv_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                records.append(row)
+    except Exception as e:
+        print(f"Error loading golden suggestions: {e}")
+    return records
 
-if __name__ == "__main__":
-    main()
+def load_eval_results():
+    results_path = Path("evaluation/eval_results_golden.csv")
+    if not results_path.exists():
+        return None
+    try:
+        df = pd.read_csv(results_path)
+        return df
+    except Exception as e:
+        print(f"Error loading eval results: {e}")
+        return None
+
+# ── Tabs ──
+explorer_tab, benchmark_tab, about_tab = st.tabs([
+    "🔍 Contextual Explorer", 
+    "📊 Benchmarking Dashboard", 
+    "ℹ️ Engine Architecture"
+])
+
+# Initialize session state variables
+if "selected_query" not in st.session_state:
+    st.session_state.selected_query = ""
+if "run_trigger" not in st.session_state:
+    st.session_state.run_trigger = False
+
+# Explorer Tab
+with explorer_tab:
+    st.markdown("### 🔍 Explore Suggested Topics")
+    col1, col2 = st.columns([1, 1])
+    
+    def render_domain_expander(domain_name, domain_info):
+        with st.expander(f"{domain_name} — {domain_info['description']}"):
+            for q in domain_info["questions"]:
+                st.markdown("<div class='suggested-q-btn'>", unsafe_allow_html=True)
+                if st.button(q, key=f"q_preset_{domain_name[:5]}_{q[:30]}"):
+                    st.session_state.selected_query = q
+                    st.session_state.run_trigger = True
+                    st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+                
+            if "papers" in domain_info:
+                st.markdown("<hr style='margin: 10px 0 5px 0; opacity: 0.15;'/>", unsafe_allow_html=True)
+                st.markdown("<p style='color: #64748B; font-size: 0.72rem; margin-bottom: 5px; font-weight: 600; letter-spacing: 0.03em;'>📄 COVERED SOURCES:</p>", unsafe_allow_html=True)
+                links = []
+                for p in domain_info["papers"]:
+                    links.append(f"<a href='{p['url']}' target='_blank' style='color: #6366F1; text-decoration: none; font-size: 0.75rem; font-weight: 500;'>🔗 {p['name']}</a>")
+                st.markdown(" &nbsp;•&nbsp; ".join(links), unsafe_allow_html=True)
+
+    presets = list(DOMAINS.items())
+    
+    with col1:
+        # First 2 presets
+        for domain_name, domain_info in presets[:2]:
+            render_domain_expander(domain_name, domain_info)
+                    
+        # 3rd preset
+        domain_name, domain_info = presets[2]
+        render_domain_expander(domain_name, domain_info)
+                
+    with col2:
+        # 4th preset
+        domain_name, domain_info = presets[3]
+        render_domain_expander(domain_name, domain_info)
+                
+        # 5th expander: dynamic vetted Q&As as a sub-topic
+        with st.expander("✨ Verified Examples — AI-generated & human-vetted"):
+            golden_qs = load_golden_suggestions()
+            if not golden_qs:
+                st.info("No vetted examples available yet. Use the Vetting Tool (port 8502) to add some!")
+            else:
+                for idx, item in enumerate(golden_qs):
+                    q = item["question"]
+                    st.markdown("<div class='suggested-q-btn'>", unsafe_allow_html=True)
+                    if st.button(q, key=f"q_vetted_{idx}_{q[:20]}"):
+                        st.session_state.selected_query = q
+                        st.session_state.run_trigger = True
+                        st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.divider()
+    
+    # 2. Query Search bar
+    st.markdown("### Ask your own question")
+    typed_query = st.text_input(
+        "Enter query",
+        value=st.session_state.selected_query,
+        placeholder="e.g. What makes CAMEL different from other frameworks?",
+        label_visibility="collapsed"
+    )
+    
+    col_search, col_clear = st.columns([6, 1])
+    with col_search:
+        search_clicked = st.button("⚡ Execute Pipeline Query")
+    with col_clear:
+        if st.button("🗑️ Clear", type="secondary"):
+            st.session_state.selected_query = ""
+            st.session_state.run_trigger = False
+            st.rerun()
+
+    # 3. Running the pipeline
+    active_query = typed_query.strip()
+    if (search_clicked or st.session_state.run_trigger) and active_query:
+        st.session_state.run_trigger = False # reset
+        
+        with st.spinner("Processing through 5-stage pipeline..."):
+            result = run_pipeline(
+                active_query,
+                vectorstore,
+                bm25_indices,
+                reranker,
+                llm,
+                expansion_node,
+                namespace=namespace_mode,
+                alpha=alpha,
+                use_expansion=use_expansion,
+                use_reranker=True
+            )
+            
+        # Display results
+        if not result["in_domain"]:
+            st.error(result["answer"])
+        else:
+            st.markdown("### Answer")
+            st.markdown(f"<div class='answer-box'>{result['answer']}</div>", unsafe_allow_html=True)
+            
+            # Display source badges
+            if result["sources"]:
+                st.markdown("### Cited Sources")
+                st.markdown("<div class='badge-container'>", unsafe_allow_html=True)
+                badges_html = ""
+                for s in result["sources"]:
+                    ns_class = "earnings" if s["namespace"] == "earning-reports" else "research"
+                    ns_icon = "💰" if s["namespace"] == "earning-reports" else "📄"
+                    badges_html += f"<span class='badge {ns_class}'>{ns_icon} [{s['index']}] {s['source']} (p.{s['page']})</span>"
+                st.markdown(badges_html, unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+                
+                # Show child vs parent retrieved segments
+                st.markdown("### Retrieved Context Segments")
+                for s in result["sources"]:
+                    with st.expander(f"[{s['index']}] {s['source']} — Page {s['page']} ({s['namespace']})"):
+                        sc1, sc2 = st.columns(2)
+                        with sc1:
+                            st.markdown("**Retrieved Child Node (Dense Match)**")
+                            st.caption(f"*{s['content']}*")
+                        with sc2:
+                            st.markdown("**Fed Parent Segment (Synthesised Context)**")
+                            st.caption(f"*{s['parent_content']}...*")
+
+            # Display Pipeline Execution Flow Visualizer inside an expander below results
+            st.divider()
+            with st.expander("🛠️ View Pipeline Execution Flow Visualizer", expanded=False):
+                expanded_text = result.get('expanded_query', active_query)
+                if use_expansion:
+                    st.info(f"🔮 **Query Expansion Output:** {expanded_text}")
+                st.markdown(f"""
+                <div class='vis-container'>
+                     <div class='vis-row'>
+                        <div class='vis-node highlight'>User Query</div>
+                        <div class='vis-arrow'>➔</div>
+                        <div class='vis-node highlight'>Domain Classifier<br><span style='color: #818CF8; font-size: 0.7rem;'>IN_DOMAIN ✓</span></div>
+                        <div class='vis-arrow'>➔</div>
+                        <div class='vis-node {"highlight" if use_expansion else ""}'>Query Expansion Node<br><span style='color: #818CF8; font-size: 0.7rem;'>{"Mistral Active" if use_expansion else "Bypassed"}</span></div>
+                    </div>
+                    <div class='vis-row' style='justify-content: center; margin: 0.2rem 0;'>
+                        <div class='vis-arrow'>▼</div>
+                    </div>
+                    <div class='vis-row'>
+                        <div class='vis-node highlight'>Retrieval Namespace Filter<br><span style='color: #818CF8; font-size: 0.7rem;'>Mode: '{namespace_mode}'</span></div>
+                        <div class='vis-arrow'>➔</div>
+                        <div class='vis-node highlight'>Dense (Vector Search)<br><span style='color: #818CF8; font-size: 0.7rem;'>k=20 chunks (nomic-embed)</span></div>
+                        <div class='vis-arrow'>➔</div>
+                        <div class='vis-node highlight'>Sparse (BM25 Search)<br><span style='color: #818CF8; font-size: 0.7rem;'>k=20 chunks (Okapi)</span></div>
+                    </div>
+                    <div class='vis-row' style='justify-content: center; margin: 0.2rem 0;'>
+                        <div class='vis-arrow'>▼</div>
+                    </div>
+                    <div class='vis-row'>
+                        <div class='vis-node highlight'>Convex Fusion Node<br><span style='color: #818CF8; font-size: 0.7rem;'>α={alpha} score fusion</span></div>
+                        <div class='vis-arrow'>➔</div>
+                        <div class='vis-node highlight'>Cross-Encoder Reranker<br><span style='color: #818CF8; font-size: 0.7rem;'>MS-Marco MiniLM (top 3)</span></div>
+                        <div class='vis-arrow'>➔</div>
+                        <div class='vis-node highlight'>Context Swapper<br><span style='color: #818CF8; font-size: 0.7rem;'>Child ➔ Parent Text (1500 chars)</span></div>
+                        <div class='vis-arrow'>➔</div>
+                        <div class='vis-node highlight'>LLM Generator<br><span style='color: #818CF8; font-size: 0.7rem;'>Mistral response synthesis</span></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+# Benchmarking Tab
+with benchmark_tab:
+    st.markdown("### 📊 Golden Dataset Evaluation Benchmarks")
+    df_eval = load_eval_results()
+    
+    if df_eval is None:
+        st.warning("⚠️ **No evaluation run data found.**")
+        st.markdown("""
+        To populate this dashboard with live metrics:
+        1. Run the local evaluation suite in your terminal:
+           ```bash
+           python evaluation/evaluate.py
+           ```
+        2. Refresh this page to view real-time RAG pipeline performance.
+        """)
+    else:
+        # Compute overall stats
+        avg_hit = df_eval["hit_rate"].mean()
+        avg_key = df_eval["keyword_coverage"].mean()
+        avg_faith = df_eval["faithfulness"].mean()
+        avg_rel = df_eval["answer_relevance"].mean()
+        avg_cprec = df_eval["context_precision"].mean()
+        avg_crec = df_eval["context_recall"].mean()
+        avg_sim = df_eval["semantic_similarity"].mean()
+        
+        m_cols = st.columns(7)
+        with m_cols[0]:
+            st.markdown(f"<div class='metric-box has-tooltip'><div class='tooltip-text'><b>Hit Rate</b><br>The fraction of queries for which the correct source document is retrieved in the top-K chunks.</div><div class='metric-val'>{avg_hit:.2f}</div><div class='metric-lbl'>Hit Rate</div></div>", unsafe_allow_html=True)
+        with m_cols[1]:
+            st.markdown(f"<div class='metric-box has-tooltip'><div class='tooltip-text'><b>Fact Recall (Keywords)</b><br>The percentage of essential keywords and facts from the reference answer that appear in the generated response.</div><div class='metric-val'>{avg_key:.2%}</div><div class='metric-lbl'>Fact Recall (Keywords)</div></div>", unsafe_allow_html=True)
+        with m_cols[2]:
+            st.markdown(f"<div class='metric-box has-tooltip'><div class='tooltip-text'><b>Semantic Similarity</b><br>Measures the semantic similarity/overlap (using embeddings) between the generated answer and the reference answer.</div><div class='metric-val'>{avg_sim:.2f}</div><div class='metric-lbl'>Semantic Similarity</div></div>", unsafe_allow_html=True)
+        with m_cols[3]:
+            st.markdown(f"<div class='metric-box has-tooltip'><div class='tooltip-text'><b>Faithfulness</b><br>Measures if the generated response is strictly grounded in the retrieved context, penalizing hallucinations.</div><div class='metric-val'>{avg_faith:.2f}</div><div class='metric-lbl'>Faithfulness</div></div>", unsafe_allow_html=True)
+        with m_cols[4]:
+            st.markdown(f"<div class='metric-box has-tooltip'><div class='tooltip-text'><b>Answer Relevance</b><br>Measures how directly the generated response addresses the user's query, penalizing redundant or off-topic information.</div><div class='metric-val'>{avg_rel:.2f}</div><div class='metric-lbl'>Answer Relevance</div></div>", unsafe_allow_html=True)
+        with m_cols[5]:
+            st.markdown(f"<div class='metric-box has-tooltip'><div class='tooltip-text'><b>Ctx Precision</b><br>Measures if the most relevant chunks are ranked higher in the retrieved context list.</div><div class='metric-val'>{avg_cprec:.2f}</div><div class='metric-lbl'>Ctx Precision</div></div>", unsafe_allow_html=True)
+        with m_cols[6]:
+            st.markdown(f"<div class='metric-box has-tooltip'><div class='tooltip-text'><b>Ctx Recall</b><br>Measures if the retrieved context contains all the information needed to fully answer the query.</div><div class='metric-val'>{avg_crec:.2f}</div><div class='metric-lbl'>Ctx Recall</div></div>", unsafe_allow_html=True)
+            
+        st.divider()
+        
+        # Sliced metrics
+        st.markdown("### 📈 Category-Sliced Performance")
+        st.markdown("The pipeline's metrics segmented across query complexity types:")
+        
+        sliced = df_eval.groupby("category").agg({
+            "hit_rate": "mean",
+            "keyword_coverage": "mean",
+            "faithfulness": "mean",
+            "answer_relevance": "mean",
+            "context_precision": "mean",
+            "context_recall": "mean",
+            "semantic_similarity": "mean"
+        }).reset_index()
+        
+        # Rename columns for clarity
+        sliced.columns = [
+            "Category", 
+            "Hit Rate (Recall)", 
+            "Fact Recall (Keyword Coverage)", 
+            "Faithfulness", 
+            "Answer Relevance", 
+            "Context Precision", 
+            "Context Recall", 
+            "Semantic Similarity"
+        ]
+        
+        st.dataframe(
+            sliced.style.format({
+                "Hit Rate (Recall)": "{:.3f}",
+                "Fact Recall (Keyword Coverage)": "{:.1%}",
+                "Faithfulness": "{:.3f}",
+                "Answer Relevance": "{:.3f}",
+                "Context Precision": "{:.3f}",
+                "Context Recall": "{:.3f}",
+                "Semantic Similarity": "{:.3f}"
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+        
+        # Detailed table expander
+        with st.expander("🔍 View Raw Evaluation Logs (Per Question)"):
+            st.dataframe(df_eval[[
+                "question", "category", "hit_rate", "keyword_coverage", "faithfulness", "answer_relevance", "context_precision", "context_recall"
+            ]], use_container_width=True)
+            
+    st.divider()
+    
+    st.markdown("### Key Improvements Under the Hood")
+    col_imp1, col_imp2 = st.columns(2)
+    with col_imp1:
+        st.markdown("""
+        #### 1. Neutralizing Semantic Traps
+        - **Old system**: An adversarial query like *"How do I build a web scraper to collect agent data?"* retrieved chunks because of the keyword "agent", polluting the context.
+        - **New system**: Separate namespaces (`/research` vs `/earning-reports`) restrict the query to the correct corpus domain. Query expansion adds contextual tokens, allowing similarity search to match dense agent framework concepts, and convex fusion ranks keyword overlap correctly.
+        """)
+    with col_imp2:
+        st.markdown("""
+        #### 2. Resolving the Context Truncation Dilemma
+        - **Old system**: Small chunks split paragraphs in half, leaving out crucial context. Large chunks resulted in diluted embeddings that missed specifics.
+        - **New system**: Parent-child indexing searches on dense 400-character segments, but provides the LLM with the full 1500-character parent segment. This keeps accuracy high and generation context complete.
+        """)
+
+# About Tab
+with about_tab:
+    st.markdown("### 🗺️ Engine Architecture Diagram")
+    
+    st.image("assets/architecture.svg", use_container_width=True)
+    
+    st.divider()
+    
+    st.markdown("### Engine Architecture Details")
+    
+    ac1, ac2 = st.columns(2)
+    with ac1:
+        st.markdown("""
+        #### 1. Ingestion Phase
+        - **Layout-Aware Markdown Parsing**: PDF structures, tables, and paragraphs are extracted using `LlamaParse` (API) or `pdfplumber` (local markdown table layout converter).
+        - **Directory Namespace Router**: Files inside `data/research` and `data/earning-reports` (or classified by name keywords) are tagged with separate namespace attributes in metadata.
+        - **Hierarchical Indexing**: Text is split into overlapping parent chunks of 1500 characters. These are subdivided into child chunks of 400 characters. Only child chunks are vectorized using `nomic-embed-text` and stored in Chroma.
+        """)
+    with ac2:
+        st.markdown("""
+        #### 2. Query and Retrieval Phase
+        - **Query Expansion Node**: User queries are analyzed by local `Mistral 7B` and expanded to inject relevant terms (e.g. "CAMEL" ➔ "CAMEL role-playing multi-agent communicative framework").
+        - **Convex Score combination**: Returns dense scores (Chroma distance, min-max normalized) and sparse scores (BM25 score, min-max normalized). Fuses them:
+          $$S_{hybrid} = \\alpha \\cdot S_{dense} + (1 - \\alpha) \\cdot S_{sparse}$$
+        - **Context Swapper**: The top 3 reranked child chunks retrieve their respective `parent_content` from metadata. This parent text is fed to `Mistral 7B` for final generation.
+        """)

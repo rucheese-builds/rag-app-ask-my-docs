@@ -1,5 +1,6 @@
 from generation.classifier import classify_query
-from retrieval.retriever import load_vector_store, build_bm25_index, hybrid_search
+from generation.expansion import QueryExpansionNode
+from retrieval.retriever import load_vector_store, load_bm25_indices, hybrid_search
 from reranking.reranker import load_reranker, rerank
 from generation.generator import load_llm, generate_answer
 
@@ -13,64 +14,121 @@ of my document corpus, which covers:
 Please ask something related to these topics."""
 
 def load_pipeline():
-    print("Loading pipeline components...")
+    print("[Pipeline] Loading pipeline components...")
     vectorstore = load_vector_store()
-    bm25, documents = build_bm25_index(vectorstore)
+    bm25_indices = load_bm25_indices()
     reranker = load_reranker()
     llm = load_llm()
-    print("Pipeline ready.")
-    return vectorstore, bm25, documents, reranker, llm
+    expansion_node = QueryExpansionNode()
+    print("[Pipeline] Pipeline ready.")
+    return vectorstore, bm25_indices, reranker, llm, expansion_node
 
-def run_pipeline(query, vectorstore, bm25, documents, reranker, llm):
+def run_pipeline(query, vectorstore, bm25_indices, reranker, llm, expansion_node, 
+                 namespace="all", alpha=0.5, use_expansion=True, use_reranker=True):
+    
+    # 1. Classify Query
     is_in_domain = classify_query(query, llm)
-
     if not is_in_domain:
         return {
             "answer": OUT_OF_DOMAIN_RESPONSE,
             "sources": [],
             "in_domain": False,
-            "query": query
+            "query": query,
+            "expanded_query": query,
+            "_reranked_docs": []
         }
 
-    retrieved = hybrid_search(vectorstore, bm25, documents, query)
-    reranked = rerank(reranker, query, retrieved, top_n=3)
-    answer = generate_answer(llm, query, reranked)
+    # 2. Query Expansion (if enabled)
+    expanded_query = query
+    if use_expansion and expansion_node:
+        expanded_query = expansion_node.expand(query)
 
+    # 3. Hybrid Search (Convex Score Combination)
+    retrieved_child_chunks = hybrid_search(
+        vectorstore, 
+        bm25_indices, 
+        expanded_query, 
+        namespace=namespace, 
+        alpha=alpha, 
+        k=20
+    )
+
+    if not retrieved_child_chunks:
+        return {
+            "answer": "I couldn't find any relevant documents to answer your question.",
+            "sources": [],
+            "in_domain": True,
+            "query": query,
+            "expanded_query": expanded_query,
+            "_reranked_docs": []
+        }
+
+    # 4. Rerank Child Chunks (or bypass)
+    if use_reranker and reranker:
+        reranked_child_chunks = rerank(reranker, expanded_query, retrieved_child_chunks, top_n=3)
+    else:
+        print("[Pipeline] Reranker bypassed, taking top 3 from Convex Score Combination.")
+        reranked_child_chunks = retrieved_child_chunks[:3]
+
+    # 5. Swap Child Content with Parent Content
+    # We pass the parent content to the generator for complete context
+    generation_chunks = []
+    for doc in reranked_child_chunks:
+        parent_content = doc.metadata.get("parent_content")
+        if parent_content:
+            # Create a new document to avoid modifying in-place permanently or just modify copy
+            parent_doc = doc.__class__(
+                page_content=parent_content,
+                metadata=doc.metadata
+            )
+            generation_chunks.append(parent_doc)
+        else:
+            generation_chunks.append(doc)
+
+    # 6. Generate Answer using parent context
+    answer = generate_answer(llm, query, generation_chunks)
+
+    # 7. Collect sources
     sources = []
-    for i, doc in enumerate(reranked):
+    for i, doc in enumerate(reranked_child_chunks):
         sources.append({
             "index": i + 1,
             "source": doc.metadata.get("source", "unknown"),
             "page": doc.metadata.get("page", "unknown"),
-            "content": doc.page_content[:300]
+            "namespace": doc.metadata.get("namespace", "unknown"),
+            "content": doc.page_content, # original child content for display
+            "parent_content": doc.metadata.get("parent_content", doc.page_content)[:300]
         })
 
     return {
         "answer": answer,
         "sources": sources,
         "in_domain": True,
-        "query": query
+        "query": query,
+        "expanded_query": expanded_query,
+        "_reranked_docs": reranked_child_chunks
     }
 
 if __name__ == "__main__":
-    vectorstore, bm25, documents, reranker, llm = load_pipeline()
+    vectorstore, bm25_indices, reranker, llm, expansion_node = load_pipeline()
 
     test_queries = [
-        "How do agents communicate in a web of agents?",
-        "How do I build a web scraper to collect agent data?",
-        "What is Salesforce Agentforce?",
-        "Should I invest in crypto tokens?",
+        "What is CAMEL?",
+        "How is Salesforce monetizing Agentforce?",
+        "Should I invest in crypto?"
     ]
 
     for query in test_queries:
         print(f"\n{'='*60}")
         print(f"Query: {query}")
         result = run_pipeline(
-            query, vectorstore, bm25, documents, reranker, llm
+            query, vectorstore, bm25_indices, reranker, llm, expansion_node,
+            namespace="all", alpha=0.4, use_expansion=True
         )
         print(f"In domain: {result['in_domain']}")
-        print(f"Answer: {result['answer'][:300]}")
+        print(f"Expanded Query: {result.get('expanded_query')}")
+        print(f"Answer: {result['answer']}")
         if result['sources']:
             print("Sources:")
             for s in result['sources']:
-                print(f"  [{s['index']}] {s['source']} — page {s['page']}")
+                print(f"  [{s['index']}] {s['source']} (page {s['page']}) in namespace '{s['namespace']}'")

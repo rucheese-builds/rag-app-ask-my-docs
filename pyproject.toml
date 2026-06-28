@@ -19,4 +19,6 @@ dependencies = [
     "sentence-transformers>=5.3.0",
     "streamlit>=1.56.0",
     "unstructured>=0.22.12",
+    "llama-parse>=0.5.2",
+    "pdfplumber>=0.11.0",
 ]
