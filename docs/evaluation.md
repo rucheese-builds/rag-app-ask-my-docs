@@ -91,6 +91,20 @@ Implementing the automatic references pruner (neutralizing bibliography pages) y
 | **Avg Faithfulness** | 0.9821 | 0.8929 | -8.92% | 🟡 Minor Shift |
 | **Avg Context Recall** | 0.6307 | 0.5593 | -7.14% | 🟡 Minor Shift |
 
+
+---
+
+## 📈 Baseline Metrics Comparison: Layout-Aware Parsing (LlamaParse vs. pdfplumber)
+
+Upgrading to layout-aware `LlamaParse` from the local `pdfplumber` fallback resolved word-merging issues (tight kerning) and table columns misalignment, resulting in a dramatic increase in context precision and retrieval accuracy:
+
+| Metric | pdfplumber (Local Parser) | LlamaParse (Layout API) | Delta | Status |
+| :--- | :---: | :---: | :---: | :---: |
+| **Avg Hit Rate (Recall)** | 0.7143 | **0.7727** | **+5.84%** | 🟢 Improved |
+| **Avg Semantic Similarity** | 0.8222 | **0.8275** | **+0.53%** | 🟢 Improved |
+| **Avg Faithfulness** | 0.8929 | **0.9682** | **+7.53%** | 🟢 Improved |
+| **Avg Context Precision** | 0.2321 | **0.5303** | **+29.82%** | 🚀 Massive Jump |
+
 ---
 
 ## 🧩 The Evaluation Paradox: Metrics vs. Perceived Quality
