@@ -17,7 +17,6 @@ try:
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from llama_index.graph_stores.neo4j import Neo4jPropertyGraphStore
     from llama_index.core.indices.property_graph import (
-        SchemaLLMPathExtractor,
         SimpleLLMPathExtractor,
         ImplicitPathExtractor,
     )
@@ -102,36 +101,30 @@ def run_pipeline():
             
     print(f"[Ingest] Successfully loaded and pruned to {len(documents)} total document pages.")
 
-    # 5. Define Knowledge Graph Ontological Schema
-    # This prevents local LLM hallucination and maps elements to standard categories.
-    Entities = Literal[
-        "Framework",      # e.g., CAMEL, AgentVerse, AutoGen, AgentRank, L2M2
-        "Company",        # e.g., Salesforce, Microsoft, ServiceNow, Nvidia, Google
-        "Role",           # e.g., Orchestrator, Recruiter, Critic, Caller, Callee
-        "Metric",         # e.g., Hit Rate, Context Precision, Fact Recall, Semantic Similarity
-        "Technology",     # e.g., MCP, Vector DB, LLM, Cross-Encoder
-        "Concept"         # e.g., Multi-agent collaboration, semantic trap
-    ]
-
-    Relations = Literal[
-        "MENTIONS",
-        "DISCUSSES",
-        "COMPARES",
-        "MONETIZES",
-        "DELIVERS",
-        "IMPLEMENTS"
-    ]
-
-    # Setup the schema-guided path extractor
-    schema_extractor = SchemaLLMPathExtractor(
-        llm=Settings.llm,
-        possible_entities=Entities,
-        possible_relations=Relations,
-        strict=False # False allows fallback parsing when 8B model uses casing/syntax variations
+    # 5. Define Knowledge Graph Prompt Instructions
+    # This guides the model to use our specific schema types (Framework, Company, Role, Metric, Technology)
+    # and relationships (MENTIONS, DISCUSSES, COMPARES, MONETIZES, DELIVERS, IMPLEMENTS)
+    # while outputting in standard (subject, predicate, object) format for native parsing.
+    custom_prompt = (
+        "Some text is provided below. Given the text, extract up to {max_paths_per_chunk} "
+        "knowledge triples in the form of (subject, predicate, object) representing relationships "
+        "between Frameworks, Companies, Roles, Metrics, and Technologies.\n"
+        "Focus on relationships like MENTIONS, DISCUSSES, COMPARES, MONETIZES, DELIVERS, and IMPLEMENTS.\n"
+        "Format each triple exactly as: (subject, predicate, object) on a new line.\n"
+        "Avoid pronouns and generic subjects.\n"
+        "Text:\n{text}\n"
+        "Triples:\n"
     )
 
-    # Combining schema extractor with syntax-based implicit extractor
-    extractors = [schema_extractor, ImplicitPathExtractor()]
+    # Setup the robust simple path extractor (fully compatible with local completion LLMs)
+    simple_extractor = SimpleLLMPathExtractor(
+        llm=Settings.llm,
+        extract_prompt=custom_prompt,
+        max_paths_per_chunk=15
+    )
+
+    # Combining simple text-based extractor with syntax-based implicit extractor
+    extractors = [simple_extractor, ImplicitPathExtractor()]
 
     # 6. Run the Ingestion Pipeline to extract entities and relations into Neo4j
     print("[Pipeline] Ingesting documents and building Property Graph...")
