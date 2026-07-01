@@ -1,3 +1,6 @@
+import nest_asyncio
+nest_asyncio.apply()
+
 from generation.classifier import classify_query
 from generation.expansion import QueryExpansionNode
 from retrieval.retriever import load_vector_store, load_bm25_indices, hybrid_search

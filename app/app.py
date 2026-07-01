@@ -1,3 +1,6 @@
+import nest_asyncio
+nest_asyncio.apply()
+
 import streamlit as st
 import sys
 from pathlib import Path
