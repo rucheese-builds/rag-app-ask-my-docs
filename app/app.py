@@ -5,7 +5,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from pipeline import load_pipeline, run_pipeline
+from pipeline import load_pipeline, run_pipeline, load_neo4j_pipeline, run_neo4j_pipeline
 
 st.set_page_config(
     page_title="AgentLens — Local RAG Intelligence Dashboard",
@@ -408,6 +408,19 @@ def get_pipeline():
 
 vectorstore, bm25_indices, reranker, llm, expansion_node = get_pipeline()
 
+@st.cache_resource
+def get_neo4j_pipeline():
+    import os
+    if not os.getenv("OPENAI_API_KEY") or not os.getenv("NEO4J_PASSWORD"):
+        return None
+    try:
+        return load_neo4j_pipeline()
+    except Exception as e:
+        print(f"Error loading Neo4j pipeline: {e}")
+        return None
+
+neo4j_query_engine = get_neo4j_pipeline()
+
 # ── Sidebar Configurations ──
 with st.sidebar:
     st.markdown("## ⚡ AgentLens")
@@ -416,6 +429,16 @@ with st.sidebar:
     
     st.markdown("### Search Settings")
     
+    # RAG Mode selector
+    rag_mode = st.selectbox(
+        "RAG Engine Mode",
+        options=["Hybrid Vector RAG (Chroma + BM25)", "Knowledge Graph RAG (Neo4j)"]
+    )
+    
+    if rag_mode == "Knowledge Graph RAG (Neo4j)" and neo4j_query_engine is None:
+        st.warning("⚠️ Neo4j or OpenAI credentials missing/invalid in .env! Falling back to Hybrid RAG.")
+        rag_mode = "Hybrid Vector RAG (Chroma + BM25)"
+        
     # 1. Namespace Selector
     namespace_mode = st.selectbox(
         "Corpus Namespace",
@@ -607,19 +630,23 @@ with explorer_tab:
     if (search_clicked or st.session_state.run_trigger) and active_query:
         st.session_state.run_trigger = False # reset
         
-        with st.spinner("Processing through 5-stage pipeline..."):
-            result = run_pipeline(
-                active_query,
-                vectorstore,
-                bm25_indices,
-                reranker,
-                llm,
-                expansion_node,
-                namespace=namespace_mode,
-                alpha=alpha,
-                use_expansion=use_expansion,
-                use_reranker=True
-            )
+        if rag_mode == "Knowledge Graph RAG (Neo4j)":
+            with st.spinner("Retrieving facts and traversing Property Graph in Neo4j..."):
+                result = run_neo4j_pipeline(active_query, neo4j_query_engine)
+        else:
+            with st.spinner("Processing through 5-stage pipeline..."):
+                result = run_pipeline(
+                    active_query,
+                    vectorstore,
+                    bm25_indices,
+                    reranker,
+                    llm,
+                    expansion_node,
+                    namespace=namespace_mode,
+                    alpha=alpha,
+                    use_expansion=use_expansion,
+                    use_reranker=True
+                )
             
         # Display results
         if not result["in_domain"]:
@@ -654,43 +681,67 @@ with explorer_tab:
 
             # Display Pipeline Execution Flow Visualizer inside an expander below results
             st.divider()
-            with st.expander("🛠️ View Pipeline Execution Flow Visualizer", expanded=False):
-                expanded_text = result.get('expanded_query', active_query)
-                if use_expansion:
-                    st.info(f"🔮 **Query Expansion Output:** {expanded_text}")
-                st.markdown(f"""
-                <div class='vis-container'>
-                     <div class='vis-row'>
-                        <div class='vis-node highlight'>User Query</div>
-                        <div class='vis-arrow'>➔</div>
-                        <div class='vis-node highlight'>Domain Classifier<br><span style='color: #818CF8; font-size: 0.7rem;'>IN_DOMAIN ✓</span></div>
-                        <div class='vis-arrow'>➔</div>
-                        <div class='vis-node {"highlight" if use_expansion else ""}'>Query Expansion Node<br><span style='color: #818CF8; font-size: 0.7rem;'>{"Mistral Active" if use_expansion else "Bypassed"}</span></div>
+            if rag_mode == "Knowledge Graph RAG (Neo4j)":
+                with st.expander("🛠️ View Pipeline Execution Flow Visualizer", expanded=False):
+                    st.markdown(f"""
+                    <div class='vis-container'>
+                         <div class='vis-row'>
+                            <div class='vis-node highlight'>User Query</div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>Neo4j Graph Store<br><span style='color: #818CF8; font-size: 0.7rem;'>Read-Only Connection</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>Hybrid Retriever<br><span style='color: #818CF8; font-size: 0.7rem;'>Vector + Keyword + Synonyms</span></div>
+                        </div>
+                        <div class='vis-row' style='justify-content: center; margin: 0.2rem 0;'>
+                            <div class='vis-arrow'>▼</div>
+                        </div>
+                        <div class='vis-row'>
+                            <div class='vis-node highlight'>Local Embeddings<br><span style='color: #818CF8; font-size: 0.7rem;'>bge-small-en-v1.5</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>Subgraph Traversal<br><span style='color: #818CF8; font-size: 0.7rem;'>Entity-Relation Paths</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>LLM Generator<br><span style='color: #818CF8; font-size: 0.7rem;'>gpt-4o-mini Synthesis</span></div>
+                        </div>
                     </div>
-                    <div class='vis-row' style='justify-content: center; margin: 0.2rem 0;'>
-                        <div class='vis-arrow'>▼</div>
+                    """, unsafe_allow_html=True)
+            else:
+                with st.expander("🛠️ View Pipeline Execution Flow Visualizer", expanded=False):
+                    expanded_text = result.get('expanded_query', active_query)
+                    if use_expansion:
+                        st.info(f"🔮 **Query Expansion Output:** {expanded_text}")
+                    st.markdown(f"""
+                    <div class='vis-container'>
+                         <div class='vis-row'>
+                            <div class='vis-node highlight'>User Query</div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>Domain Classifier<br><span style='color: #818CF8; font-size: 0.7rem;'>IN_DOMAIN ✓</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node {"highlight" if use_expansion else ""}'>Query Expansion Node<br><span style='color: #818CF8; font-size: 0.7rem;'>{"Mistral Active" if use_expansion else "Bypassed"}</span></div>
+                        </div>
+                        <div class='vis-row' style='justify-content: center; margin: 0.2rem 0;'>
+                            <div class='vis-arrow'>▼</div>
+                        </div>
+                        <div class='vis-row'>
+                            <div class='vis-node highlight'>Retrieval Namespace Filter<br><span style='color: #818CF8; font-size: 0.7rem;'>Mode: '{namespace_mode}'</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>Dense (Vector Search)<br><span style='color: #818CF8; font-size: 0.7rem;'>k=20 chunks (nomic-embed)</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>Sparse (BM25 Search)<br><span style='color: #818CF8; font-size: 0.7rem;'>k=20 chunks (Okapi)</span></div>
+                        </div>
+                        <div class='vis-row' style='justify-content: center; margin: 0.2rem 0;'>
+                            <div class='vis-arrow'>▼</div>
+                        </div>
+                        <div class='vis-row'>
+                            <div class='vis-node highlight'>Convex Fusion Node<br><span style='color: #818CF8; font-size: 0.7rem;'>α={alpha} score fusion</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>Cross-Encoder Reranker<br><span style='color: #818CF8; font-size: 0.7rem;'>MS-Marco MiniLM (top 3)</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>Context Swapper<br><span style='color: #818CF8; font-size: 0.7rem;'>Child ➔ Parent Text (1500 chars)</span></div>
+                            <div class='vis-arrow'>➔</div>
+                            <div class='vis-node highlight'>LLM Generator<br><span style='color: #818CF8; font-size: 0.7rem;'>Mistral response synthesis</span></div>
+                        </div>
                     </div>
-                    <div class='vis-row'>
-                        <div class='vis-node highlight'>Retrieval Namespace Filter<br><span style='color: #818CF8; font-size: 0.7rem;'>Mode: '{namespace_mode}'</span></div>
-                        <div class='vis-arrow'>➔</div>
-                        <div class='vis-node highlight'>Dense (Vector Search)<br><span style='color: #818CF8; font-size: 0.7rem;'>k=20 chunks (nomic-embed)</span></div>
-                        <div class='vis-arrow'>➔</div>
-                        <div class='vis-node highlight'>Sparse (BM25 Search)<br><span style='color: #818CF8; font-size: 0.7rem;'>k=20 chunks (Okapi)</span></div>
-                    </div>
-                    <div class='vis-row' style='justify-content: center; margin: 0.2rem 0;'>
-                        <div class='vis-arrow'>▼</div>
-                    </div>
-                    <div class='vis-row'>
-                        <div class='vis-node highlight'>Convex Fusion Node<br><span style='color: #818CF8; font-size: 0.7rem;'>α={alpha} score fusion</span></div>
-                        <div class='vis-arrow'>➔</div>
-                        <div class='vis-node highlight'>Cross-Encoder Reranker<br><span style='color: #818CF8; font-size: 0.7rem;'>MS-Marco MiniLM (top 3)</span></div>
-                        <div class='vis-arrow'>➔</div>
-                        <div class='vis-node highlight'>Context Swapper<br><span style='color: #818CF8; font-size: 0.7rem;'>Child ➔ Parent Text (1500 chars)</span></div>
-                        <div class='vis-arrow'>➔</div>
-                        <div class='vis-node highlight'>LLM Generator<br><span style='color: #818CF8; font-size: 0.7rem;'>Mistral response synthesis</span></div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
 # Benchmarking Tab
 with benchmark_tab:

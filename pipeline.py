@@ -108,6 +108,70 @@ def run_pipeline(query, vectorstore, bm25_indices, reranker, llm, expansion_node
         "expanded_query": expanded_query,
         "_reranked_docs": reranked_child_chunks
     }
+def load_neo4j_pipeline():
+    import os
+    from llama_index.core import PropertyGraphIndex
+    from llama_index.graph_stores.neo4j import Neo4jPropertyGraphStore
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    from llama_index.llms.openai import OpenAI
+
+    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_username = os.getenv("NEO4J_USERNAME", "neo4j")
+    neo4j_password = os.getenv("NEO4J_PASSWORD")
+    neo4j_database = os.getenv("NEO4J_DATABASE", "neo4j")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+
+    if not neo4j_password:
+        raise ValueError("NEO4J_PASSWORD is not set in your .env file!")
+    if not openai_api_key:
+        raise ValueError("OPENAI_API_KEY is not set in your .env file!")
+
+    print("[Pipeline] Connecting to Neo4j Property Graph (Read-Only)...")
+    graph_store = Neo4jPropertyGraphStore(
+        url=neo4j_uri,
+        username=neo4j_username,
+        password=neo4j_password,
+        database=neo4j_database
+    )
+
+    index = PropertyGraphIndex.from_existing(
+        property_graph_store=graph_store,
+        embed_model=HuggingFaceEmbedding(
+            model_name=os.getenv("EMBED_MODEL_NAME", "BAAI/bge-small-en-v1.5"),
+            cache_folder="./hf_cache"
+        ),
+        llm=OpenAI(model="gpt-4o-mini", api_key=openai_api_key)
+    )
+    
+    print("[Pipeline] Neo4j read-only query engine loaded successfully.")
+    return index.as_query_engine()
+
+def run_neo4j_pipeline(query, query_engine):
+    response = query_engine.query(query)
+    
+    sources = []
+    for node_with_score in response.source_nodes:
+        node = node_with_score.node
+        text = node.get_content()
+        meta = node.metadata
+        
+        sources.append({
+            "index": len(sources) + 1,
+            "source": meta.get("source", "Unknown Document"),
+            "page": meta.get("page", 1),
+            "namespace": meta.get("namespace", "all"),
+            "content": text[:400],
+            "parent_content": text[:1500]
+        })
+        
+    return {
+        "answer": str(response.response),
+        "sources": sources,
+        "in_domain": True,
+        "query": query,
+        "expanded_query": query,
+        "_reranked_docs": []
+    }
 
 if __name__ == "__main__":
     vectorstore, bm25_indices, reranker, llm, expansion_node = load_pipeline()
