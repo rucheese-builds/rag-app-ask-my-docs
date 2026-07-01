@@ -700,7 +700,7 @@ with explorer_tab:
                             <div class='vis-arrow'>➔</div>
                             <div class='vis-node highlight'>Subgraph Traversal<br><span style='color: #818CF8; font-size: 0.7rem;'>Entity-Relation Paths</span></div>
                             <div class='vis-arrow'>➔</div>
-                            <div class='vis-node highlight'>LLM Generator<br><span style='color: #818CF8; font-size: 0.7rem;'>gpt-4o-mini Synthesis</span></div>
+                            <div class='vis-node highlight'>LLM Generator<br><span style='color: #818CF8; font-size: 0.7rem;'>Local Mistral Synthesis</span></div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)

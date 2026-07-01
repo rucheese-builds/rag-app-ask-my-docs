@@ -113,18 +113,15 @@ def load_neo4j_pipeline():
     from llama_index.core import PropertyGraphIndex
     from llama_index.graph_stores.neo4j import Neo4jPropertyGraphStore
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-    from llama_index.llms.openai import OpenAI
+    from llama_index.llms.ollama import Ollama
 
     neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     neo4j_username = os.getenv("NEO4J_USERNAME", "neo4j")
     neo4j_password = os.getenv("NEO4J_PASSWORD")
     neo4j_database = os.getenv("NEO4J_DATABASE", "neo4j")
-    openai_api_key = os.getenv("OPENAI_API_KEY")
 
     if not neo4j_password:
         raise ValueError("NEO4J_PASSWORD is not set in your .env file!")
-    if not openai_api_key:
-        raise ValueError("OPENAI_API_KEY is not set in your .env file!")
 
     print("[Pipeline] Connecting to Neo4j Property Graph (Read-Only)...")
     graph_store = Neo4jPropertyGraphStore(
@@ -134,16 +131,24 @@ def load_neo4j_pipeline():
         database=neo4j_database
     )
 
+    # Initialize local LLM: mistral via Ollama (zero query API costs)
+    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    llm = Ollama(
+        model="mistral",
+        base_url=ollama_base_url,
+        request_timeout=120.0
+    )
+
     index = PropertyGraphIndex.from_existing(
         property_graph_store=graph_store,
         embed_model=HuggingFaceEmbedding(
             model_name=os.getenv("EMBED_MODEL_NAME", "BAAI/bge-small-en-v1.5"),
             cache_folder="./hf_cache"
         ),
-        llm=OpenAI(model="gpt-4o-mini", api_key=openai_api_key)
+        llm=llm
     )
     
-    print("[Pipeline] Neo4j read-only query engine loaded successfully.")
+    print("[Pipeline] Neo4j read-only query engine loaded successfully (using local Mistral).")
     return index.as_query_engine()
 
 def run_neo4j_pipeline(query, query_engine):
