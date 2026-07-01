@@ -4,12 +4,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 from typing import Literal
 
+# Add project root to sys.path to resolve ingestion/parser.py imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 # Load .env file containing credentials
 load_dotenv()
 
 try:
     # 1. Import LlamaIndex Core and integrations
-    from llama_index.core import Settings, SimpleDirectoryReader, PropertyGraphIndex
+    from llama_index.core import Settings, PropertyGraphIndex, Document as LlamaIndexDocument
     from llama_index.llms.ollama import Ollama
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from llama_index.graph_stores.neo4j import Neo4jPropertyGraphStore
@@ -62,7 +65,10 @@ def run_pipeline():
         database=NEO4J_DATABASE
     )
 
-    # 4. Integrate Directory Loading Logic
+    # 4. Integrate Directory Loading & Pruning Logic
+    # Reuses parser.py to run LlamaParse and prune bibliography/references pages.
+    from ingestion.parser import parse_pdf
+
     RESEARCH_DIR = Path("data/research")
     EARNINGS_DIR = Path("data/earning-reports")
     
@@ -78,11 +84,23 @@ def run_pipeline():
 
     print(f"[Ingest] Found {len(pdf_files)} PDF documents to load.")
     
-    reader = SimpleDirectoryReader(
-        input_files=[str(p) for p in pdf_files]
-    )
-    documents = reader.load_data()
-    print(f"[Ingest] Successfully loaded {len(documents)} document pages.")
+    documents = []
+    for p in pdf_files:
+        print(f"[Ingest] Parsing & Pruning: {p.name}")
+        lc_docs = parse_pdf(p)
+        for lc_doc in lc_docs:
+            # Convert LangChain Document to LlamaIndex native Document
+            llama_doc = LlamaIndexDocument(
+                text=lc_doc.page_content,
+                metadata={
+                    "source": lc_doc.metadata.get("source", p.name),
+                    "page": lc_doc.metadata.get("page", 1),
+                    "namespace": lc_doc.metadata.get("namespace", "all")
+                }
+            )
+            documents.append(llama_doc)
+            
+    print(f"[Ingest] Successfully loaded and pruned to {len(documents)} total document pages.")
 
     # 5. Define Knowledge Graph Ontological Schema
     # This prevents local LLM hallucination and maps elements to standard categories.
