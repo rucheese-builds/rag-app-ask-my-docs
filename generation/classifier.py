@@ -6,7 +6,8 @@ def classify_query(query, llm=None):
         "camel", "autogen", "agentverse", "react", "dylan", "l2m2", 
         "agentbench", "openagents", "agentforce", "agentic", "salesforce", 
         "servicenow", "nvidia", "microsoft", "ibm", "google", "earnings", 
-        "transcript", "web of agents", "multi-agent", "agent coordination"
+        "transcript", "web of agents", "multi-agent", "agent coordination",
+        "agentrank", "dovis", "internet 3.0", "internet of agents"
     ]
     query_lower = query.lower()
     
@@ -18,7 +19,7 @@ def classify_query(query, llm=None):
     classifier_llm = OllamaLLM(model="mistral")
 
     prompt = f"""You are a query classifier for a RAG system. The document corpus covers:
-1. Academic research papers on AI agents, multi-agent frameworks (CAMEL, AutoGen, AgentVerse, L2M2, ReAct, DyLAN), and agent benchmarks.
+1. Academic research papers on AI agents, multi-agent frameworks (CAMEL, AutoGen, AgentVerse, L2M2, ReAct, DyLAN, AgentRank, DOVIS), agent benchmarks, and the Internet of Agents / Internet 3.0.
 2. Enterprise AI strategies and business adoption (Salesforce, Microsoft, Nvidia, ServiceNow, Google, IBM earnings calls).
 
 Is the following question related to these topics? Answer with 'yes' or 'no' only.
