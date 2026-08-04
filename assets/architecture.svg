@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 700" width="100%" height="100%">
   <!-- Definitions for arrows and filters -->
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -12,13 +12,13 @@
 
   <style>
     .node {
-      fill: rgba(30, 41, 59, 0.8);
+      fill: rgba(30, 41, 59, 0.85);
       stroke: #6366F1;
       stroke-width: 1.5px;
-      rx: 8px;
+      rx: 6px;
     }
     .node-router {
-      fill: rgba(124, 58, 237, 0.2);
+      fill: rgba(124, 58, 237, 0.15);
       stroke: #8B5CF6;
       stroke-width: 2px;
     }
@@ -26,11 +26,17 @@
       fill: rgba(16, 185, 129, 0.1);
       stroke: #10B981;
       stroke-width: 1.5px;
-      rx: 20px;
+      rx: 16px;
+    }
+    .node-graph-db {
+      fill: rgba(6, 182, 212, 0.1);
+      stroke: #06B6D4;
+      stroke-width: 2px;
+      rx: 16px;
     }
     .text-title {
       font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       fill: #FFFFFF;
       text-anchor: middle;
@@ -38,26 +44,26 @@
     }
     .text-subtitle {
       font-family: 'Inter', sans-serif;
-      font-size: 11px;
+      font-size: 10px;
       fill: #94A3B8;
       text-anchor: middle;
       dominant-baseline: middle;
     }
     .edge-line {
       stroke: #818CF8;
-      stroke-width: 2;
+      stroke-width: 1.8;
       fill: none;
       marker-end: url(#arrow);
     }
     .edge-label {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
+      font-size: 9px;
       fill: #A5B4FC;
       text-anchor: middle;
     }
     .section-title {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
       fill: #A855F7;
       letter-spacing: 0.05em;
@@ -65,166 +71,190 @@
   </style>
 
   <!-- Background Grid -->
-  <rect width="900" height="700" fill="#0B0F19" />
+  <rect width="980" height="700" fill="#0B0F19" />
   
   <!-- Column Titles -->
-  <text x="220" y="35" class="section-title" text-anchor="middle">📦 DOCUMENT INGESTION PIPELINE</text>
-  <text x="680" y="35" class="section-title" text-anchor="middle">⚡ RETRIEVAL &amp; GENERATION PIPELINE</text>
+  <text x="240" y="35" class="section-title" text-anchor="middle">📦 DUAL INGESTION PIPELINES</text>
+  <text x="730" y="35" class="section-title" text-anchor="middle">⚡ DUAL RAG QUERY PIPELINES</text>
 
-  <!-- INGESTION PIPELINE (LEFT COLUMN) -->
+  <!-- INGESTION PIPELINE (LEFT AREA: x=10 to 470) -->
   
   <!-- Raw PDFs -->
-  <g transform="translate(120, 60)">
-    <rect width="200" height="50" class="node" />
-    <text x="100" y="25" class="text-title">Raw PDFs in data/</text>
-    <text x="100" y="38" class="text-subtitle">Research &amp; Earnings reports</text>
+  <g transform="translate(140, 60)">
+    <rect width="200" height="45" class="node" />
+    <text x="100" y="22" class="text-title">Raw PDFs in data/</text>
+    <text x="100" y="34" class="text-subtitle">Research &amp; Earnings reports</text>
   </g>
-  <path d="M 220 110 L 220 140" class="edge-line" />
+  <path d="M 240 105 L 240 130" class="edge-line" />
 
   <!-- Namespace Router -->
-  <g transform="translate(120, 140)">
-    <rect width="200" height="50" class="node node-router" />
-    <text x="100" y="25" class="text-title">Namespace Router</text>
-    <text x="100" y="38" class="text-subtitle">Folder structure detection</text>
+  <g transform="translate(140, 130)">
+    <rect width="200" height="45" class="node node-router" />
+    <text x="100" y="22" class="text-title">Namespace Router</text>
+    <text x="100" y="34" class="text-subtitle">Folder structure detection</text>
   </g>
   
   <!-- Router Outputs -->
-  <path d="M 120 165 L 70 165 L 70 220" class="edge-line" />
-  <text x="50" y="195" class="edge-label">research/</text>
+  <path d="M 140 152 L 95 152 L 95 200" class="edge-line" />
+  <text x="75" y="178" class="edge-label">research/</text>
   
-  <path d="M 320 165 L 370 165 L 370 220" class="edge-line" />
-  <text x="395" y="195" class="edge-label">earnings/</text>
+  <path d="M 340 152 L 385 152 L 385 200" class="edge-line" />
+  <text x="405" y="178" class="edge-label">earnings/</text>
 
   <!-- Research Namespace -->
-  <g transform="translate(10, 220)">
-    <rect width="130" height="45" class="node" />
-    <text x="65" y="22" class="text-title">Research Papers</text>
+  <g transform="translate(30, 200)">
+    <rect width="130" height="40" class="node" />
+    <text x="65" y="20" class="text-title">Research Papers</text>
   </g>
   
   <!-- Earnings Namespace -->
-  <g transform="translate(300, 220)">
-    <rect width="130" height="45" class="node" />
-    <text x="65" y="22" class="text-title">Earnings Calls</text>
+  <g transform="translate(320, 200)">
+    <rect width="130" height="40" class="node" />
+    <text x="65" y="20" class="text-title">Earnings Calls</text>
   </g>
 
   <!-- Connection to Parser -->
-  <path d="M 70 265 L 70 300 L 210 300" class="edge-line" />
-  <path d="M 370 265 L 370 300 L 230 300" class="edge-line" />
-  <path d="M 220 300 L 220 320" class="edge-line" />
+  <path d="M 95 240 L 95 270 L 230 270" class="edge-line" />
+  <path d="M 385 240 L 385 270 L 250 270" class="edge-line" />
+  <path d="M 240 270 L 240 290" class="edge-line" />
 
   <!-- Layout-Aware Parser -->
-  <g transform="translate(120, 320)">
-    <rect width="200" height="50" class="node" />
-    <text x="100" y="20" class="text-title">Layout-Aware Parser</text>
-    <text x="100" y="35" class="text-subtitle">LlamaParse / pdfplumber fallback</text>
-  </g>
-  <path d="M 220 370 L 220 400" class="edge-line" />
-
-  <!-- Hierarchical Chunking -->
-  <g transform="translate(120, 400)">
-    <rect width="200" height="50" class="node" />
-    <text x="100" y="20" class="text-title">Hierarchical Chunking</text>
-    <text x="100" y="35" class="text-subtitle">Parent (1500) &amp; Child (400)</text>
+  <g transform="translate(140, 290)">
+    <rect width="200" height="45" class="node" />
+    <text x="100" y="18" class="text-title">Layout-Aware Parser</text>
+    <text x="100" y="32" class="text-subtitle">LlamaParse / pdfplumber fallback</text>
   </g>
   
-  <path d="M 120 425 L 70 425 L 70 480" class="edge-line" />
-  <path d="M 320 425 L 370 425 L 370 480" class="edge-line" />
-
-  <!-- Parent Store -->
-  <g transform="translate(10, 480)">
-    <rect width="120" height="50" class="node node-db" />
-    <text x="60" y="25" class="text-title">Parent Store</text>
-    <text x="60" y="38" class="text-subtitle">Metadata embeddings</text>
-  </g>
+  <!-- Ingestion Split: Vector vs Graph -->
+  <path d="M 140 312 L 115 312 L 115 350" class="edge-line" />
+  <text x="80" y="335" class="edge-label">Vector Flow</text>
   
-  <!-- Child Vector DB -->
-  <g transform="translate(310, 480)">
-    <rect width="120" height="50" class="node node-db" />
-    <text x="60" y="25" class="text-title">Child Vector DB</text>
-    <text x="60" y="38" class="text-subtitle">Chroma search index</text>
+  <path d="M 340 312 L 365 312 L 365 350" class="edge-line" />
+  <text x="405" y="335" class="edge-label">Graph Flow</text>
+
+  <!-- Left Branch (Vector Store) -->
+  <g transform="translate(30, 350)">
+    <rect width="170" height="45" class="node" />
+    <text x="85" y="18" class="text-title">Hierarchical Chunking</text>
+    <text x="85" y="32" class="text-subtitle">Parent (1500) &amp; Child (400)</text>
+  </g>
+  <path d="M 115 395 L 115 430" class="edge-line" />
+  
+  <g transform="translate(30, 430)">
+    <rect width="170" height="45" class="node node-db" />
+    <text x="85" y="18" class="text-title">Chroma Vector DB</text>
+    <text x="85" y="32" class="text-subtitle">Dense Child retrieval index</text>
+  </g>
+  <path d="M 115 475 L 115 510" class="edge-line" />
+
+  <g transform="translate(30, 510)">
+    <rect width="170" height="45" class="node node-db" />
+    <text x="85" y="18" class="text-title">Parent Store (.pkl)</text>
+    <text x="85" y="32" class="text-subtitle">Retrieval context storage</text>
   </g>
 
-  <!-- RETRIEVAL & GENERATION PIPELINE (RIGHT COLUMN) -->
+  <!-- Right Branch (Neo4j Graph Store) -->
+  <g transform="translate(280, 350)">
+    <rect width="170" height="45" class="node" />
+    <text x="85" y="18" class="text-title">References Pruner</text>
+    <text x="85" y="32" class="text-subtitle">Prunes bibliographies/indices</text>
+  </g>
+  <path d="M 365 395 L 365 430" class="edge-line" />
+  
+  <g transform="translate(280, 430)">
+    <rect width="170" height="45" class="node" />
+    <text x="85" y="18" class="text-title">Entity Extraction</text>
+    <text x="85" y="32" class="text-subtitle">Parallel cloud gpt-4o-mini</text>
+  </g>
+  <path d="M 365 475 L 365 510" class="edge-line" />
+
+  <g transform="translate(280, 510)">
+    <rect width="170" height="50" class="node node-graph-db" />
+    <text x="85" y="20" class="text-title" fill="#22D3EE">Neo4j Aura Cloud DB</text>
+    <text x="85" y="35" class="text-subtitle">Property Graph Store</text>
+  </g>
+
+
+  <!-- RETRIEVAL & GENERATION PIPELINE (RIGHT AREA: x=500 to 950) -->
   
   <!-- User Query -->
-  <g transform="translate(580, 60)">
+  <g transform="translate(630, 60)">
     <rect width="200" height="40" class="node" />
     <text x="100" y="20" class="text-title">User Query</text>
   </g>
-  <path d="M 680 100 L 680 120" class="edge-line" />
-
-  <!-- Query Expansion Node -->
-  <g transform="translate(580, 120)">
-    <rect width="200" height="45" class="node" />
-    <text x="100" y="18" class="text-title">Query Expansion Node</text>
-    <text x="100" y="32" class="text-subtitle">Mistral 7B synonyms</text>
-  </g>
-  <path d="M 680 165 L 680 185" class="edge-line" />
-
-  <!-- Expanded Query -->
-  <g transform="translate(580, 185)">
-    <rect width="200" height="40" class="node" fill="rgba(99, 102, 241, 0.1)" />
-    <text x="100" y="20" class="text-title">Expanded Query</text>
-  </g>
-  <path d="M 680 225 L 680 245" class="edge-line" />
-
-  <!-- Multi-Namespace Search -->
-  <g transform="translate(580, 245)">
-    <rect width="200" height="45" class="node" />
-    <text x="100" y="18" class="text-title">Multi-Namespace Search</text>
-    <text x="100" y="32" class="text-subtitle">Namespace routing filter</text>
-  </g>
   
-  <path d="M 580 268 L 530 268 L 530 310" class="edge-line" />
-  <path d="M 780 268 L 830 268 L 830 310" class="edge-line" />
-
-  <!-- Dense Search -->
-  <g transform="translate(470, 310)">
-    <rect width="120" height="45" class="node" />
-    <text x="60" y="22" class="text-title">Dense Search</text>
-    <text x="60" y="34" class="text-subtitle">Chroma ChromaDB</text>
-  </g>
+  <!-- Engine Selector Split -->
+  <path d="M 630 80 L 590 80 L 590 130" class="edge-line" />
+  <text x="540" y="105" class="edge-label">Vector RAG</text>
   
-  <!-- Sparse BM25 Search -->
-  <g transform="translate(770, 310)">
-    <rect width="120" height="45" class="node" />
-    <text x="60" y="22" class="text-title">Sparse BM25</text>
-    <text x="60" y="34" class="text-subtitle">Okapi keyword search</text>
+  <path d="M 830 80 L 820 80 L 820 130" class="edge-line" />
+  <text x="870" y="105" class="edge-label">Graph RAG</text>
+
+  <!-- VECTOR PIPELINE BRANCH -->
+  <g transform="translate(500, 130)">
+    <rect width="180" height="45" class="node" />
+    <text x="90" y="18" class="text-title">Query Expansion</text>
+    <text x="90" y="32" class="text-subtitle">Mistral 7B synonyms</text>
   </g>
+  <path d="M 590 175 L 590 210" class="edge-line" />
 
-  <path d="M 530 355 L 530 380 L 670 380" class="edge-line" />
-  <path d="M 830 355 L 830 380 L 690 380" class="edge-line" />
-  <path d="M 680 380 L 680 400" class="edge-line" />
-
-  <!-- Convex Fusion Node -->
-  <g transform="translate(580, 400)">
-    <rect width="200" height="45" class="node" />
-    <text x="100" y="18" class="text-title">Convex Score Fusion</text>
-    <text x="100" y="32" class="text-subtitle">Alpha-tuned (α) combination</text>
+  <g transform="translate(500, 210)">
+    <rect width="180" height="45" class="node" />
+    <text x="90" y="18" class="text-title">Dense &amp; Sparse Search</text>
+    <text x="90" y="32" class="text-subtitle">Chroma + Okapi BM25</text>
   </g>
-  <path d="M 680 445 L 680 465" class="edge-line" />
+  <path d="M 590 255 L 590 290" class="edge-line" />
 
-  <!-- Cross-Encoder Reranker -->
-  <g transform="translate(580, 465)">
-    <rect width="200" height="45" class="node" />
-    <text x="100" y="18" class="text-title">Cross-Encoder Reranker</text>
-    <text x="100" y="32" class="text-subtitle">MS-Marco MiniLM (top 3)</text>
+  <g transform="translate(500, 290)">
+    <rect width="180" height="45" class="node" />
+    <text x="90" y="18" class="text-title">Convex Score Fusion</text>
+    <text x="90" y="32" class="text-subtitle">Alpha-tuned (α=0.4)</text>
   </g>
-  <path d="M 680 510 L 680 530" class="edge-line" />
+  <path d="M 590 335 L 590 370" class="edge-line" />
 
-  <!-- Parent Context Retrieval -->
-  <g transform="translate(580, 530)">
-    <rect width="200" height="45" class="node" />
-    <text x="100" y="18" class="text-title">Parent Context Swap</text>
-    <text x="100" y="32" class="text-subtitle">Swap child chunk for parent</text>
+  <g transform="translate(500, 370)">
+    <rect width="180" height="45" class="node" />
+    <text x="90" y="18" class="text-title">Cross-Encoder Reranker</text>
+    <text x="90" y="32" class="text-subtitle">MS-Marco MiniLM (top 3)</text>
   </g>
-  <path d="M 680 575 L 680 595" class="edge-line" />
+  <path d="M 590 415 L 590 450" class="edge-line" />
 
-  <!-- LLM Generator -->
-  <g transform="translate(580, 595)">
-    <rect width="200" height="45" class="node" fill="rgba(16, 185, 129, 0.1)" stroke="#10B981" />
-    <text x="100" y="18" class="text-title" fill="#34D399">LLM Generator</text>
-    <text x="100" y="32" class="text-subtitle">Mistral response synthesis</text>
+  <g transform="translate(500, 450)">
+    <rect width="180" height="45" class="node" />
+    <text x="90" y="18" class="text-title">Parent Context Swap</text>
+    <text x="90" y="32" class="text-subtitle">Dense-to-parent swap</text>
+  </g>
+  <path d="M 590 495 L 590 560 L 705 560" class="edge-line" />
+
+
+  <!-- KNOWLEDGE GRAPH PIPELINE BRANCH -->
+  <g transform="translate(730, 130)">
+    <rect width="180" height="45" class="node" />
+    <text x="90" y="18" class="text-title">Local Embeddings</text>
+    <text x="90" y="32" class="text-subtitle">bge-small-en-v1.5</text>
+  </g>
+  <path d="M 820 175 L 820 210" class="edge-line" />
+
+  <g transform="translate(730, 210)">
+    <rect width="180" height="45" class="node" />
+    <text x="90" y="18" class="text-title">Subgraph Traversal</text>
+    <text x="90" y="32" class="text-subtitle">Entity-relation extraction</text>
+  </g>
+  <path d="M 820 255 L 820 290" class="edge-line" />
+
+  <g transform="translate(730, 290)">
+    <rect width="180" height="45" class="node node-graph-db" />
+    <text x="90" y="18" class="text-title" fill="#22D3EE">Neo4j Read-Only Store</text>
+    <text x="90" y="32" class="text-subtitle">Read-only Aura fetch</text>
+  </g>
+  <path d="M 820 335 L 820 560 L 745 560" class="edge-line" />
+
+  
+  <!-- LLM Response Generation (Combined Target Node) -->
+  <g transform="translate(615, 560)">
+    <rect width="230" height="50" class="node" fill="rgba(16, 185, 129, 0.1)" stroke="#10B981" />
+    <text x="115" y="20" class="text-title" fill="#34D399">LLM Generator</text>
+    <text x="115" y="35" class="text-subtitle">Local Mistral response synthesis</text>
   </g>
 
 </svg>
