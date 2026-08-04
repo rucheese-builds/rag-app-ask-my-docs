@@ -13,7 +13,7 @@ load_dotenv()
 try:
     # 1. Import LlamaIndex Core and integrations
     from llama_index.core import Settings, PropertyGraphIndex, Document as LlamaIndexDocument
-    from llama_index.llms.ollama import Ollama
+    from llama_index.llms.openai import OpenAI
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from llama_index.graph_stores.neo4j import Neo4jPropertyGraphStore
     from llama_index.core.indices.property_graph import (
@@ -22,21 +22,24 @@ try:
     )
 except ImportError:
     print("\n[Error] Required packages not found. Please install LlamaIndex dependencies:")
-    print("pip install llama-index-core llama-index-llms-ollama llama-index-embeddings-huggingface llama-index-graph-stores-neo4j\n")
+    print("pip install llama-index-core llama-index-llms-openai llama-index-embeddings-huggingface llama-index-graph-stores-neo4j\n")
     sys.exit(1)
 
 def run_pipeline():
-    print("=== Starting LlamaIndex Knowledge Graph Ingestion Pipeline (Local) ===")
+    print("=== Starting LlamaIndex Knowledge Graph Ingestion Pipeline (Hybrid Local/Cloud) ===")
 
-    # 2. Config global Settings to map local Ollama and HuggingFace models
-    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
-    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    
-    print(f"[Config] Initializing Local LLM: {OLLAMA_MODEL} via Ollama ({OLLAMA_BASE_URL})...")
-    Settings.llm = Ollama(
-        model=OLLAMA_MODEL,
-        base_url=OLLAMA_BASE_URL,
-        request_timeout=360.0, # Long timeout for intensive entity extraction tasks
+    # 2. Config global Settings: cloud OpenAI for entity extraction, local HuggingFace for embeddings
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        print("[Error] Missing OPENAI_API_KEY environment variable in .env!")
+        print("Please add 'OPENAI_API_KEY = \"your-api-key\"' to your .env file to enable fast cloud extraction.")
+        sys.exit(1)
+
+    print("[Config] Initializing Cloud LLM: gpt-4o-mini via OpenAI...")
+    Settings.llm = OpenAI(
+        model="gpt-4o-mini",
+        api_key=OPENAI_API_KEY,
+        request_timeout=120.0
     )
 
     EMBED_MODEL_NAME = os.getenv("EMBED_MODEL_NAME", "BAAI/bge-small-en-v1.5")
@@ -46,7 +49,7 @@ def run_pipeline():
         cache_folder="./hf_cache" # Stores model cache locally in project
     )
 
-    # 3. Configure connection to local/cloud Neo4j instance
+    # 3. Configure connection to Neo4j instance
     NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     NEO4J_USERNAME = os.getenv("NEO4J_USERNAME", "neo4j")
     NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
@@ -116,7 +119,7 @@ def run_pipeline():
         "Triples:\n"
     )
 
-    # Setup the robust simple path extractor (fully compatible with local completion LLMs)
+    # Setup the robust simple path extractor (fully compatible with OpenAI gpt-4o-mini)
     simple_extractor = SimpleLLMPathExtractor(
         llm=Settings.llm,
         extract_prompt=custom_prompt,
@@ -128,7 +131,7 @@ def run_pipeline():
 
     # 6. Run the Ingestion Pipeline to extract entities and relations into Neo4j
     print("[Pipeline] Ingesting documents and building Property Graph...")
-    print("[Pipeline] Extraction will stream directly to Neo4j. This may take some time depending on your CPU/GPU.")
+    print("[Pipeline] Extraction will run via gpt-4o-mini. This should only take a few minutes.")
     
     try:
         index = PropertyGraphIndex.from_documents(

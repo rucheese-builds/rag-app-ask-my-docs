@@ -20,7 +20,15 @@ def format_context(documents):
         )
     return "\n\n".join(context_parts)
 
-def build_prompt(query, context):
+def build_prompt(query, context, chat_history=None):
+    history_str = ""
+    if chat_history:
+        history_parts = []
+        for msg in chat_history[-5:]: # Take the last 5 turns to stay within context bounds
+            role = "User" if msg["role"] == "user" else "Assistant"
+            history_parts.append(f"{role}: {msg['content']}")
+        history_str = "\nPrevious Conversation:\n" + "\n".join(history_parts) + "\n"
+
     return f"""You are an expert research assistant specializing in AI agents and multi-agent systems.
 
 Answer the question using ONLY information directly relevant to the question from the context below.
@@ -29,7 +37,7 @@ For every claim you make, cite the source using [Source N] notation.
 Keep your answer concise and focused — 3 to 5 sentences maximum.
 If the answer is not found in the context, say exactly: "I don't have enough information in my documents to answer this."
 Never fabricate information. Never explain what you cannot answer — just say you don't have enough information.
-
+{history_str}
 Context:
 {context}
 
@@ -37,10 +45,10 @@ Question: {query}
 
 Answer (with citations):"""
 
-def generate_answer(llm, query, documents):
+def generate_answer(llm, query, documents, chat_history=None):
     print(f"\nGenerating answer for: {query}")
     context = format_context(documents)
-    prompt = build_prompt(query, context)
+    prompt = build_prompt(query, context, chat_history=chat_history)
     answer = llm.invoke(prompt)
     return answer
 

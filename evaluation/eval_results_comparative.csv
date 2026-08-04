@@ -1,0 +1,45 @@
+question,category,pipeline,hit_rate,mrr,semantic_similarity,keyword_coverage,faithfulness,answer_relevance,context_precision,context_recall
+How do agents communicate with each other in a web of agents?,Normal,Vector RAG,0.0,0.0,0.7697593511907611,0.25,1.0,0.6,0.0,0.67
+How do agents communicate with each other in a web of agents?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What is the role of an orchestrator agent in multi-agent systems?,Normal,Vector RAG,0.0,0.0,0.7734978888177395,0.25,0.8,0.75,0.0,0.75
+What is the role of an orchestrator agent in multi-agent systems?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+How is Salesforce monetizing AI agents?,Normal,Vector RAG,0.0,0.0,0.9055798903839272,0.75,1.0,0.95,0.0,0.67
+How is Salesforce monetizing AI agents?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What is Agentforce and how many deals has it closed?,Normal,Vector RAG,0.0,0.0,0.7809931851802562,0.4,1.0,0.85,0.0,0.5
+What is Agentforce and how many deals has it closed?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+How do I build a web scraper to collect agent data?,Complex & Distractor,Vector RAG,1.0,1.0,0.6283585679650298,1.0,1.0,1.0,0.0,1.0
+How do I build a web scraper to collect agent data?,Complex & Distractor,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What communication protocol should I use for my API?,Complex & Distractor,Vector RAG,1.0,1.0,0.49473799324673007,0.0,1.0,0.0,0.0,1.0
+What communication protocol should I use for my API?,Complex & Distractor,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What makes a good musical orchestration?,Complex & Distractor,Vector RAG,1.0,1.0,0.514341797010601,0.0,1.0,0.0,0.0,1.0
+What makes a good musical orchestration?,Complex & Distractor,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+How do real estate agents find new clients?,Complex & Distractor,Vector RAG,1.0,1.0,0.49473799324673007,0.0,1.0,0.0,0.0,1.0
+How do real estate agents find new clients?,Complex & Distractor,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Should I invest in crypto tokens in 2025?,Complex & Distractor,Vector RAG,1.0,1.0,0.514341797010601,0.0,1.0,0.0,0.0,1.0
+Should I invest in crypto tokens in 2025?,Complex & Distractor,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What are the key differences between CAMEL and AgentVerse approaches to multi-agent collaboration?,Multi-hop,Vector RAG,0.0,0.0,0.5954060494977883,0.4,1.0,1.0,0.0,0.5
+What are the key differences between CAMEL and AgentVerse approaches to multi-agent collaboration?,Multi-hop,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What is OpenAI's strategy for multi-agent systems?,Negative,Vector RAG,1.0,1.0,0.5649380213934916,1.0,1.0,1.0,0.0,1.0
+What is OpenAI's strategy for multi-agent systems?,Negative,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What are agents?,Negative,Vector RAG,0.0,0.0,0.7804351633754154,0.0,1.0,1.0,0.0,0.0
+What are agents?,Negative,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+How do academic research findings on agent coordination compare to how Salesforce implements it in Agentforce?,Multi-hop,Vector RAG,0.0,0.0,0.7852310807271273,0.4,1.0,1.0,0.0,0.5
+How do academic research findings on agent coordination compare to how Salesforce implements it in Agentforce?,Multi-hop,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+How many Agentic Work Units did Salesforce deliver in Q4?,Normal,Vector RAG,0.0,0.0,0.9795088032035412,1.0,1.0,1.0,0.0,0.0
+How many Agentic Work Units did Salesforce deliver in Q4?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Who are the key members involved in the development of OpenAgents and what are the three agents included in the platform?,Normal,Vector RAG,0.0,0.0,0.8119353890150914,0.16666666666666666,1.0,0.5,0.0,1.0
+Who are the key members involved in the development of OpenAgents and what are the three agents included in the platform?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+How many research areas does multi-agent system (MAS) research cover based on the records of Web of Science (WOS)?,Normal,Vector RAG,0.0,0.0,0.8218190346825539,0.8,1.0,1.0,0.0,0.67
+How many research areas does multi-agent system (MAS) research cover based on the records of Web of Science (WOS)?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What is the application domain of the coordination algorithms in autonomous driving (AV) tasks?,Complex & Distractor,Vector RAG,0.0,0.0,0.8875437430318938,1.0,1.0,0.85,0.0,1.0
+What is the application domain of the coordination algorithms in autonomous driving (AV) tasks?,Complex & Distractor,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What is the definition of multi-agent coordination given in the context of MAS?,Multi-hop,Vector RAG,0.0,0.0,0.9594142035079399,0.5,1.0,1.0,0.0,1.0
+What is the definition of multi-agent coordination given in the context of MAS?,Multi-hop,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+What are the roles and responsibilities of the caller and callee in the orchestration process inside an agent marketplace using DOVIS?,Normal,Vector RAG,0.0,0.0,0.7636390634493111,0.38461538461538464,1.0,0.95,0.0,1.0
+What are the roles and responsibilities of the caller and callee in the orchestration process inside an agent marketplace using DOVIS?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"How does the DOVIS protocol ensure that discovery algorithms can be computed reliably in an open ecosystem, and what are the minimal record types defined by DOVIS?",Multi-hop,Vector RAG,0.0,0.0,0.9161225981474909,1.0,0.8,1.0,0.0,1.0
+"How does the DOVIS protocol ensure that discovery algorithms can be computed reliably in an open ecosystem, and what are the minimal record types defined by DOVIS?",Multi-hop,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"In Agent Rank Algorithm what are the key components of a record that corresponds to an invocation from agent i to agent j on a task of type k, and what is the formula for the recency kernel used to weight more recent evidence?",Normal,Vector RAG,0.0,0.0,0.886749445235465,1.0,1.0,1.0,0.0,1.0
+"In Agent Rank Algorithm what are the key components of a record that corresponds to an invocation from agent i to agent j on a task of type k, and what is the formula for the recency kernel used to weight more recent evidence?",Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Why agent ecosystem in Agent Rank is denoted as two distinct weighted graphs?,Normal,Vector RAG,0.0,0.0,0.8006494350890705,0.5,1.0,1.0,0.0,1.0
+Why agent ecosystem in Agent Rank is denoted as two distinct weighted graphs?,Normal,Graph RAG,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0

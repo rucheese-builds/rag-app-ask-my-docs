@@ -1,6 +1,3 @@
-import nest_asyncio
-nest_asyncio.apply()
-
 import streamlit as st
 import sys
 from pathlib import Path
@@ -9,6 +6,49 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pipeline import load_pipeline, run_pipeline, load_neo4j_pipeline, run_neo4j_pipeline
+import json
+
+CONVERSATIONS_DIR = Path("conversations")
+CONVERSATIONS_DIR.mkdir(exist_ok=True)
+CHAT_HISTORY_FILE = CONVERSATIONS_DIR / "default_chat.json"
+
+def load_persistent_history():
+    if CHAT_HISTORY_FILE.exists():
+        try:
+            with open(CHAT_HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading chat history: {e}")
+    return []
+
+def save_persistent_history(history):
+    try:
+        with open(CHAT_HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error saving chat history: {e}")
+
+def check_system_metadata_query(query: str) -> dict:
+    q = query.lower().strip()
+    system_keywords = [
+        "list files", "list documents", "what documents", "which documents", 
+        "available files", "available documents", "which earning calls", 
+        "which earnings calls", "available earning reports", "list transcripts",
+        "which transcripts", "available papers", "what papers", "what calls"
+    ]
+    if any(k in q for k in system_keywords):
+        research_dir = Path("data/research")
+        earnings_dir = Path("data/earning-reports")
+        
+        research_files = [f.name for f in research_dir.glob("*.pdf")] if research_dir.exists() else []
+        earnings_files = [f.name for f in earnings_dir.glob("*.pdf")] if earnings_dir.exists() else []
+        
+        return {
+            "is_system": True,
+            "research_files": research_files,
+            "earnings_files": earnings_files
+        }
+    return {"is_system": False}
 
 st.set_page_config(
     page_title="AgentLens — Local RAG Intelligence Dashboard",
@@ -610,77 +650,152 @@ with explorer_tab:
 
     st.divider()
     
-    # 2. Query Search bar
-    st.markdown("### Ask your own question")
-    typed_query = st.text_input(
-        "Enter query",
-        value=st.session_state.selected_query,
-        placeholder="e.g. What makes CAMEL different from other frameworks?",
-        label_visibility="collapsed"
-    )
-    
-    col_search, col_clear = st.columns([6, 1])
-    with col_search:
-        search_clicked = st.button("⚡ Execute Pipeline Query")
-    with col_clear:
-        if st.button("🗑️ Clear", type="secondary"):
+    # Initialize persistent history in session state
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = load_persistent_history()
+
+    # Chat Header and Clear History button
+    c1, c2 = st.columns([6, 1])
+    with c1:
+        st.markdown("### 💬 Conversational RAG Thread")
+    with c2:
+        if st.button("🗑️ Clear Chat", key="clear_chat_btn"):
+            st.session_state.chat_history = []
+            save_persistent_history([])
             st.session_state.selected_query = ""
             st.session_state.run_trigger = False
             st.rerun()
 
-    # 3. Running the pipeline
-    active_query = typed_query.strip()
-    if (search_clicked or st.session_state.run_trigger) and active_query:
-        st.session_state.run_trigger = False # reset
-        
-        if rag_mode == "Knowledge Graph RAG (Neo4j)":
-            with st.spinner("Retrieving facts and traversing Property Graph in Neo4j..."):
-                result = run_neo4j_pipeline(active_query, neo4j_query_engine)
-        else:
-            with st.spinner("Processing through 5-stage pipeline..."):
-                result = run_pipeline(
-                    active_query,
-                    vectorstore,
-                    bm25_indices,
-                    reranker,
-                    llm,
-                    expansion_node,
-                    namespace=namespace_mode,
-                    alpha=alpha,
-                    use_expansion=use_expansion,
-                    use_reranker=True
-                )
-            
-        # Display results
-        if not result["in_domain"]:
-            st.error(result["answer"])
-        else:
-            st.markdown("### Answer")
-            st.markdown(f"<div class='answer-box'>{result['answer']}</div>", unsafe_allow_html=True)
-            
-            # Display source badges
-            if result["sources"]:
-                st.markdown("### Cited Sources")
-                st.markdown("<div class='badge-container'>", unsafe_allow_html=True)
-                badges_html = ""
-                for s in result["sources"]:
-                    ns_class = "earnings" if s["namespace"] == "earning-reports" else "research"
-                    ns_icon = "💰" if s["namespace"] == "earning-reports" else "📄"
-                    badges_html += f"<span class='badge {ns_class}'>{ns_icon} [{s['index']}] {s['source']} (p.{s['page']})</span>"
-                st.markdown(badges_html, unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+    # Loop and render chat logs
+    for idx, msg in enumerate(st.session_state.chat_history):
+        with st.chat_message(msg["role"]):
+            if msg.get("is_system"):
+                # Render metadata catalog card
+                st.markdown("#### 📂 System Catalog — Available Documents")
+                st.markdown("Here is the list of document files currently indexed in the AgentLens corpus:")
                 
-                # Show child vs parent retrieved segments
-                st.markdown("### Retrieved Context Segments")
-                for s in result["sources"]:
-                    with st.expander(f"[{s['index']}] {s['source']} — Page {s['page']} ({s['namespace']})"):
-                        sc1, sc2 = st.columns(2)
-                        with sc1:
-                            st.markdown("**Retrieved Child Node (Dense Match)**")
-                            st.caption(f"*{s['content']}*")
-                        with sc2:
-                            st.markdown("**Fed Parent Segment (Synthesised Context)**")
-                            st.caption(f"*{s['parent_content']}...*")
+                sc1, sc2 = st.columns(2)
+                with sc1:
+                    st.markdown(f"**📄 Research Papers ({len(msg['research_files'])})**")
+                    for rf in msg["research_files"]:
+                        st.markdown(f"- {rf}")
+                with sc2:
+                    st.markdown(f"**💰 Earnings Call Transcripts ({len(msg['earnings_files'])})**")
+                    for ef in msg["earnings_files"]:
+                        st.markdown(f"- {ef}")
+            else:
+                st.markdown(f"<div class='answer-box'>{msg['content']}</div>", unsafe_allow_html=True)
+                
+                # Show external model fallback badge
+                if not msg.get("in_domain", True):
+                    st.markdown("<span style='background-color: #3B82F6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;'>🌐 Frontier Model (Gemini Fallback)</span>", unsafe_allow_html=True)
+                
+                if "sources" in msg and msg["sources"]:
+                    st.markdown("<div class='badge-container' style='margin-top: 10px;'>", unsafe_allow_html=True)
+                    badges_html = ""
+                    for s in msg["sources"]:
+                        ns_class = "earnings" if s["namespace"] == "earning-reports" else "research"
+                        ns_icon = "💰" if s["namespace"] == "earning-reports" else "📄"
+                        badges_html += f"<span class='badge {ns_class}'>{ns_icon} [{s['index']}] {s['source']} (p.{s['page']})</span>"
+                    st.markdown(badges_html, unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    # Show segment expanders
+                    for s in msg["sources"]:
+                        with st.expander(f"[{s['index']}] {s['source']} — Page {s['page']} ({s['namespace']})"):
+                            sc1, sc2 = st.columns(2)
+                            with sc1:
+                                st.markdown("**Retrieved Child Node (Dense Match)**")
+                                st.caption(f"*{s['content']}*")
+                            with sc2:
+                                st.markdown("**Fed Parent Segment (Synthesised Context)**")
+                                st.caption(f"*{s['parent_content']}...*")
+
+    # Chat Input Box
+    user_query = st.chat_input("Ask a question about the papers or earning reports...")
+    
+    # Merge preset query triggers
+    active_query = None
+    if st.session_state.run_trigger and st.session_state.selected_query:
+        active_query = st.session_state.selected_query.strip()
+        st.session_state.run_trigger = False
+        st.session_state.selected_query = ""
+    elif user_query:
+        active_query = user_query.strip()
+
+    if active_query:
+        # Check system metadata router
+        meta_res = check_system_metadata_query(active_query)
+        if meta_res["is_system"]:
+            system_msg = {
+                "role": "assistant",
+                "is_system": True,
+                "research_files": meta_res["research_files"],
+                "earnings_files": meta_res["earnings_files"],
+                "content": "Listed catalog."
+            }
+            st.session_state.chat_history.append({"role": "user", "content": active_query})
+            st.session_state.chat_history.append(system_msg)
+            save_persistent_history(st.session_state.chat_history)
+            st.rerun()
+            
+        else:
+            # Append user message and save
+            st.session_state.chat_history.append({"role": "user", "content": active_query})
+            save_persistent_history(st.session_state.chat_history)
+            
+            # Temporary UI rendering
+            with st.chat_message("user"):
+                st.markdown(f"<div class='answer-box'>{active_query}</div>", unsafe_allow_html=True)
+                
+            with st.chat_message("assistant"):
+                if rag_mode == "Knowledge Graph RAG (Neo4j)":
+                    with st.spinner("Retrieving facts and traversing Property Graph in Neo4j..."):
+                        result = run_neo4j_pipeline(active_query, neo4j_query_engine, chat_history=st.session_state.chat_history[:-1])
+                else:
+                    with st.spinner("Processing through LangGraph state machine..."):
+                        result = run_pipeline(
+                            active_query,
+                            vectorstore,
+                            bm25_indices,
+                            reranker,
+                            llm,
+                            expansion_node,
+                            namespace=namespace_mode,
+                            alpha=alpha,
+                            use_expansion=use_expansion,
+                            use_reranker=True,
+                            chat_history=st.session_state.chat_history[:-1]
+                        )
+                
+                if not result["in_domain"]:
+                    st.error("⚠️ **Corpus Boundary Reached**")
+                    st.markdown("This query lies outside your local document database corpus.")
+                    st.markdown(f"<div class='answer-box'>{result['answer']}</div>", unsafe_allow_html=True)
+                    st.markdown("<span style='background-color: #3B82F6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;'>🌐 Frontier Model (Gemini Fallback)</span>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<div class='answer-box'>{result['answer']}</div>", unsafe_allow_html=True)
+                    
+                    if result["sources"]:
+                        st.markdown("<div class='badge-container' style='margin-top: 10px;'>", unsafe_allow_html=True)
+                        badges_html = ""
+                        for s in result["sources"]:
+                            ns_class = "earnings" if s["namespace"] == "earning-reports" else "research"
+                            ns_icon = "💰" if s["namespace"] == "earning-reports" else "📄"
+                            badges_html += f"<span class='badge {ns_class}'>{ns_icon} [{s['index']}] {s['source']} (p.{s['page']})</span>"
+                        st.markdown(badges_html, unsafe_allow_html=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
+                
+            # Append bot message and save
+            assistant_msg = {
+                "role": "assistant",
+                "content": result["answer"],
+                "in_domain": result["in_domain"],
+                "sources": result["sources"]
+            }
+            st.session_state.chat_history.append(assistant_msg)
+            save_persistent_history(st.session_state.chat_history)
+            st.rerun()
 
             # Display Pipeline Execution Flow Visualizer inside an expander below results
             st.divider()

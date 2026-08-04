@@ -1,8 +1,41 @@
 import re
 from langchain_ollama import OllamaLLM
 
+class GeminiEvalLLM:
+    def __init__(self):
+        import google.generativeai as genai
+        import os
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY is not set in your .env file!")
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel("gemini-1.5-flash")
+        self.fallback_model = OllamaLLM(model="mistral", temperature=0.0)
+
+    def invoke(self, prompt: str) -> str:
+        import time
+        for attempt in range(3):
+            try:
+                response = self.model.generate_content(prompt)
+                time.sleep(1.0) # Avoid hitting Gemini free tier rate limits (15 RPM)
+                return response.text.strip()
+            except Exception as e:
+                err_str = str(e).lower()
+                if "service_disabled" in err_str or "blocked" in err_str or "403" in err_str:
+                    print(f"[Gemini Eval] API is disabled or blocked. Falling back to local Ollama Mistral...")
+                    return self.fallback_model.invoke(prompt)
+                print(f"[Gemini Eval] Attempt {attempt+1} failed: {e}")
+                time.sleep(2.0)
+        print("[Gemini Eval] All attempts failed. Falling back to local Ollama Mistral...")
+        return self.fallback_model.invoke(prompt)
+
 def get_eval_llm():
-    return OllamaLLM(model="mistral", temperature=0.0)
+    try:
+        print("[Evaluator] Initializing Google Gemini API (gemini-1.5-flash) as judge...")
+        return GeminiEvalLLM()
+    except Exception as e:
+        print(f"[Evaluator] Gemini init failed ({e}). Falling back to local Ollama Mistral.")
+        return OllamaLLM(model="mistral", temperature=0.0)
 
 def _parse_score(response):
     match = re.search(r"SCORE:\s*([0-9.]+)", response)
@@ -121,13 +154,26 @@ Chunk 3 Relevant: YES or NO
         
         # Parse YES/NO for each chunk
         relevance = []
+        lines = response.split("\n")
         for i in range(1, len(retrieved_chunks) + 1):
-            pattern = rf"Chunk {i} Relevant:\s*(YES|NO)"
-            match = re.search(pattern, response, re.IGNORECASE)
-            if match:
-                relevance.append(match.group(1).upper() == "YES")
-            else:
-                relevance.append(False)
+            chunk_found = False
+            for line in lines:
+                if f"chunk {i}" in line.lower() or f"chunk{i}" in line.lower():
+                    if "yes" in line.lower():
+                        relevance.append(True)
+                        chunk_found = True
+                        break
+                    elif "no" in line.lower():
+                        relevance.append(False)
+                        chunk_found = True
+                        break
+            if not chunk_found:
+                pattern = rf"Chunk\s*{i}.*?(YES|NO)"
+                match = re.search(pattern, response, re.IGNORECASE)
+                if match:
+                    relevance.append(match.group(1).upper() == "YES")
+                else:
+                    relevance.append(False)
         
         # Calculate Context Precision:
         # P@k = (relevant chunks up to k) / k
