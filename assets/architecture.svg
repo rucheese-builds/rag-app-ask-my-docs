@@ -125,50 +125,52 @@
     <text x="100" y="32" class="text-subtitle">LlamaParse / pdfplumber fallback</text>
   </g>
   
-  <!-- Ingestion Split: Vector vs Graph -->
-  <path d="M 140 312 L 115 312 L 115 350" class="edge-line" />
-  <text x="80" y="335" class="edge-label">Vector Flow</text>
+  <path d="M 240 335 L 240 360" class="edge-line" />
+
+  <!-- References & Bibliography Pruner (Runs before the split) -->
+  <g transform="translate(140, 360)">
+    <rect width="200" height="45" class="node" />
+    <text x="100" y="18" class="text-title">References Pruner</text>
+    <text x="100" y="32" class="text-subtitle">Prunes bibliographies strictly</text>
+  </g>
+
+  <!-- Ingestion Split: Vector vs Graph (after pruner) -->
+  <path d="M 140 382.5 L 115 382.5 L 115 430" class="edge-line" />
+  <text x="80" y="405" class="edge-label">Vector Flow</text>
   
-  <path d="M 340 312 L 365 312 L 365 350" class="edge-line" />
-  <text x="405" y="335" class="edge-label">Graph Flow</text>
+  <path d="M 340 382.5 L 365 382.5 L 365 430" class="edge-line" />
+  <text x="405" y="405" class="edge-label">Graph Flow</text>
 
   <!-- Left Branch (Vector Store) -->
-  <g transform="translate(30, 350)">
+  <g transform="translate(30, 430)">
     <rect width="170" height="45" class="node" />
     <text x="85" y="18" class="text-title">Hierarchical Chunking</text>
     <text x="85" y="32" class="text-subtitle">Parent (1500) &amp; Child (400)</text>
   </g>
-  <path d="M 115 395 L 115 430" class="edge-line" />
+  <path d="M 115 475 L 115 500" class="edge-line" />
   
-  <g transform="translate(30, 430)">
+  <g transform="translate(30, 500)">
     <rect width="170" height="45" class="node node-db" />
     <text x="85" y="18" class="text-title">Chroma Vector DB</text>
     <text x="85" y="32" class="text-subtitle">Dense Child retrieval index</text>
   </g>
-  <path d="M 115 475 L 115 510" class="edge-line" />
+  <path d="M 115 545 L 115 570" class="edge-line" />
 
-  <g transform="translate(30, 510)">
+  <g transform="translate(30, 570)">
     <rect width="170" height="45" class="node node-db" />
     <text x="85" y="18" class="text-title">Parent Store (.pkl)</text>
     <text x="85" y="32" class="text-subtitle">Retrieval context storage</text>
   </g>
 
   <!-- Right Branch (Neo4j Graph Store) -->
-  <g transform="translate(280, 350)">
-    <rect width="170" height="45" class="node" />
-    <text x="85" y="18" class="text-title">References Pruner</text>
-    <text x="85" y="32" class="text-subtitle">Prunes bibliographies/indices</text>
-  </g>
-  <path d="M 365 395 L 365 430" class="edge-line" />
-  
   <g transform="translate(280, 430)">
     <rect width="170" height="45" class="node" />
     <text x="85" y="18" class="text-title">Entity Extraction</text>
     <text x="85" y="32" class="text-subtitle">Parallel cloud gpt-4o-mini</text>
   </g>
-  <path d="M 365 475 L 365 510" class="edge-line" />
+  <path d="M 365 475 L 365 565" class="edge-line" />
 
-  <g transform="translate(280, 510)">
+  <g transform="translate(280, 565)">
     <rect width="170" height="50" class="node node-graph-db" />
     <text x="85" y="20" class="text-title" fill="#22D3EE">Neo4j Aura Cloud DB</text>
     <text x="85" y="35" class="text-subtitle">Property Graph Store</text>
