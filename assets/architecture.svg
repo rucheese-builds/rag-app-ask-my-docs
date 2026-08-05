@@ -185,75 +185,83 @@
     <text x="100" y="20" class="text-title">User Query</text>
   </g>
   
-  <!-- Engine Selector Split -->
-  <path d="M 630 80 L 590 80 L 590 130" class="edge-line" />
-  <text x="540" y="105" class="edge-label">Vector RAG</text>
+  <!-- Domain Classifier / Router Node -->
+  <g transform="translate(630, 130)">
+    <rect width="200" height="45" class="node node-router" />
+    <text x="100" y="18" class="text-title">Domain Classifier &amp; Router</text>
+    <text x="100" y="32" class="text-subtitle">Fast allowlist + Mistral 7B check</text>
+  </g>
+  <path d="M 730 100 L 730 130" class="edge-line" />
   
-  <path d="M 830 80 L 820 80 L 820 130" class="edge-line" />
-  <text x="870" y="105" class="edge-label">Graph RAG</text>
+  <!-- Engine Selector Split from Router -->
+  <path d="M 630 152.5 L 590 152.5 L 590 210" class="edge-line" />
+  <text x="540" y="175" class="edge-label">Vector RAG</text>
+  
+  <path d="M 830 152.5 L 820 152.5 L 820 210" class="edge-line" />
+  <text x="870" y="175" class="edge-label">Graph RAG</text>
 
   <!-- VECTOR PIPELINE BRANCH -->
-  <g transform="translate(500, 130)">
+  <g transform="translate(500, 210)">
     <rect width="180" height="45" class="node" />
     <text x="90" y="18" class="text-title">Query Expansion</text>
     <text x="90" y="32" class="text-subtitle">Mistral 7B synonyms</text>
   </g>
-  <path d="M 590 175 L 590 210" class="edge-line" />
+  <path d="M 590 255 L 590 280" class="edge-line" />
 
-  <g transform="translate(500, 210)">
+  <g transform="translate(500, 280)">
     <rect width="180" height="45" class="node" />
     <text x="90" y="18" class="text-title">Dense &amp; Sparse Search</text>
     <text x="90" y="32" class="text-subtitle">Chroma + Okapi BM25</text>
   </g>
-  <path d="M 590 255 L 590 290" class="edge-line" />
+  <path d="M 590 325 L 590 350" class="edge-line" />
 
-  <g transform="translate(500, 290)">
+  <g transform="translate(500, 350)">
     <rect width="180" height="45" class="node" />
     <text x="90" y="18" class="text-title">Convex Score Fusion</text>
     <text x="90" y="32" class="text-subtitle">Alpha-tuned (α=0.4)</text>
   </g>
-  <path d="M 590 335 L 590 370" class="edge-line" />
+  <path d="M 590 395 L 590 420" class="edge-line" />
 
-  <g transform="translate(500, 370)">
+  <g transform="translate(500, 420)">
     <rect width="180" height="45" class="node" />
     <text x="90" y="18" class="text-title">Cross-Encoder Reranker</text>
     <text x="90" y="32" class="text-subtitle">MS-Marco MiniLM (top 3)</text>
   </g>
-  <path d="M 590 415 L 590 450" class="edge-line" />
+  <path d="M 590 465 L 590 490" class="edge-line" />
 
-  <g transform="translate(500, 450)">
+  <g transform="translate(500, 490)">
     <rect width="180" height="45" class="node" />
     <text x="90" y="18" class="text-title">Parent Context Swap</text>
     <text x="90" y="32" class="text-subtitle">Dense-to-parent swap</text>
   </g>
-  <path d="M 590 495 L 590 560 L 705 560" class="edge-line" />
+  <path d="M 590 535 L 590 580 L 705 580" class="edge-line" />
 
 
   <!-- KNOWLEDGE GRAPH PIPELINE BRANCH -->
-  <g transform="translate(730, 130)">
+  <g transform="translate(730, 210)">
     <rect width="180" height="45" class="node" />
     <text x="90" y="18" class="text-title">Local Embeddings</text>
     <text x="90" y="32" class="text-subtitle">bge-small-en-v1.5</text>
   </g>
-  <path d="M 820 175 L 820 210" class="edge-line" />
+  <path d="M 820 255 L 820 280" class="edge-line" />
 
-  <g transform="translate(730, 210)">
+  <g transform="translate(730, 280)">
     <rect width="180" height="45" class="node" />
     <text x="90" y="18" class="text-title">Subgraph Traversal</text>
     <text x="90" y="32" class="text-subtitle">Entity-relation extraction</text>
   </g>
-  <path d="M 820 255 L 820 290" class="edge-line" />
+  <path d="M 820 325 L 820 350" class="edge-line" />
 
-  <g transform="translate(730, 290)">
+  <g transform="translate(730, 350)">
     <rect width="180" height="45" class="node node-graph-db" />
     <text x="90" y="18" class="text-title" fill="#22D3EE">Neo4j Read-Only Store</text>
     <text x="90" y="32" class="text-subtitle">Read-only Aura fetch</text>
   </g>
-  <path d="M 820 335 L 820 560 L 745 560" class="edge-line" />
+  <path d="M 820 395 L 820 580 L 745 580" class="edge-line" />
 
   
   <!-- LLM Response Generation (Combined Target Node) -->
-  <g transform="translate(615, 560)">
+  <g transform="translate(615, 580)">
     <rect width="230" height="50" class="node" fill="rgba(16, 185, 129, 0.1)" stroke="#10B981" />
     <text x="115" y="20" class="text-title" fill="#34D399">LLM Generator</text>
     <text x="115" y="35" class="text-subtitle">Local Mistral response synthesis</text>
